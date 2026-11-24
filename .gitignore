@@ -2,3 +2,6 @@
 **/obj/
 .vs/
 *.csproj.user
+
+# Local Codex progress notes
+/PROGRESS.md

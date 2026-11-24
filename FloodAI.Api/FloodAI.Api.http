@@ -16,3 +16,14 @@ Accept: application/json
 
 GET {{host}}/api/v1/basins/1/stations
 Accept: application/json
+
+###
+
+# Replace 1 with the ID of a registered station.
+GET {{host}}/api/v1/stations/1/metrics
+Accept: application/json
+
+###
+
+GET {{host}}/api/v1/stations/1/observations?metric=water_level&from=2021-01-01&to=2021-01-02&pageSize=12
+Accept: application/json

@@ -55,3 +55,23 @@ dotnet ef database update --project FloodAI.DataAccess --startup-project FloodAI
 ```
 
 Project khởi động cung cấp cấu hình kết nối. Project DataAccess giữ migration và snapshot của schema.
+
+## Quan trắc Văn Úc
+
+- `GET /api/v1/stations/{id}/metrics` liệt kê các đại lượng có dữ liệu tại trạm. Đơn vị chưa xác minh có giá trị `null`.
+- `GET /api/v1/stations/{id}/observations?metric=water_level&from=2021-01-01&to=2021-01-02&page=1&pageSize=250` trả chuỗi giá trị gốc, nguồn và trạng thái chất lượng. `from` được tính vào kết quả, `to` là mốc loại trừ. Hai tham số dùng ngày ISO hoặc giờ ISO theo đồng hồ nguồn, ví dụ `2021-01-01T08:00:00`. Mỗi trang có tối đa 1.000 điểm và kèm `hasNextPage`.
+
+Chạy lệnh ở thư mục `backend`. Kiểm tra CSV trước khi nhập:
+
+```powershell
+$csvPath = (Resolve-Path '..\datasets\processed\van_uc_hourly.csv').Path
+dotnet run --project FloodAI.Api --launch-profile http -- --import-van-uc "$csvPath" --dry-run
+```
+
+Khi cả hai trạm đã được đăng ký trong lưu vực `van_uc`, thay `TRUNG_TRANG_ID` và `HON_DAU_ID` bằng ID của từng trạm rồi chạy:
+
+```powershell
+dotnet run --project FloodAI.Api --launch-profile http -- --import-van-uc "$csvPath" --trung-trang-id TRUNG_TRANG_ID --hon-dau-id HON_DAU_ID
+```
+
+Lệnh nhập dùng kết nối `ConnectionStrings:FloodAI` và ghi toàn bộ file trong một giao dịch. Kết quả kiểm tra kỳ vọng là 17.520 giờ và 52.560 giá trị. Chạy lại cùng tệp bỏ qua bản ghi đã có. Nếu gặp giá trị khác ở cùng nguồn, trạm, đại lượng và giờ, giao dịch được hủy để có thể kiểm tra sự khác biệt trước khi ghi.

@@ -6,3 +6,13 @@ GET {{host}}/health
 
 GET {{host}}/openapi/v1.json
 Accept: application/json
+
+###
+
+GET {{host}}/api/v1/basins
+Accept: application/json
+
+###
+
+GET {{host}}/api/v1/basins/1/stations
+Accept: application/json

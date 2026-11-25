@@ -53,8 +53,7 @@ public sealed class HistoricalForecastService(
         var inputHash = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(
             new { stationId, series.SourceId, series.HonDauId, history })));
 
-        var cached = await FindRunAsync(stationId, issueTime, bundleHash, inputHash, threshold.Id, cancellationToken);
-        var run = cached ?? await RunAndSaveAsync(
+        var run = await RunAndSaveAsync(
             stationId, issueTime, bundleHash, inputHash, threshold, models, history, cancellationToken);
         var actuals = await observations.ReadObservedTargetsAsync(stationId, series, issueTime, cancellationToken);
         var points = run.Values.OrderBy(value => value.HorizonHours).Select(value => new HistoricalForecastPoint(
@@ -86,16 +85,6 @@ public sealed class HistoricalForecastService(
         return thresholds[0];
     }
 
-    private Task<ForecastRun?> FindRunAsync(long stationId, DateTime issueTime,
-        string bundleHash, string inputHash, long thresholdId, CancellationToken cancellationToken) =>
-        dbContext.ForecastRuns.AsNoTracking().Include(run => run.Values)
-            .Where(run => run.StationId == stationId && run.IssueTimeLocal == issueTime &&
-                run.ModelBundleHash == bundleHash && run.InputHash == inputHash && run.Status == CompletedStatus &&
-                run.Values.Count == VanUcForecastDefinition.Horizons.Count &&
-                run.Values.All(value => dbContext.WarningEvaluations.Any(warning =>
-                    warning.ForecastValueId == value.Id && warning.ThresholdId == thresholdId)))
-            .OrderBy(run => run.Id).FirstOrDefaultAsync(cancellationToken);
-
     private async Task<ForecastRun> RunAndSaveAsync(long stationId, DateTime issueTime, string bundleHash,
         string inputHash, StationThreshold threshold, IReadOnlyList<ForecastModel> models,
         IReadOnlyList<ForecastHour> history, CancellationToken cancellationToken)
@@ -109,19 +98,6 @@ public sealed class HistoricalForecastService(
         {
             throw new ForecastException(ForecastError.Unavailable,
                 "The inference response does not match the registered model bundle.");
-        }
-
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var lockKey = FormattableString.Invariant(
-            $"floodai:forecast_run:{stationId}:{issueTime:O}:{bundleHash}:{inputHash}:{threshold.Id}");
-        await dbContext.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0));", cancellationToken);
-
-        var cached = await FindRunAsync(stationId, issueTime, bundleHash, inputHash, threshold.Id, cancellationToken);
-        if (cached is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-            return cached;
         }
 
         var run = new ForecastRun
@@ -152,7 +128,6 @@ public sealed class HistoricalForecastService(
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
         return run;
     }
 

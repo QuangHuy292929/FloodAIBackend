@@ -135,9 +135,11 @@ public sealed class CommunityPostService(FloodAiDbContext dbContext)
         posts.Select(post => new CommunityPostView(
             post.Id, post.AreaId, post.StationId, new CommunityAuthor(post.AuthorId, post.Author.DisplayName),
             post.Title, post.Content, post.PostType, post.ObservedAt, post.ModerationStatus, post.PublishedAt,
-            post.ModerationStatus == CommunityRules.Rejected
+            post.ModerationStatus == CommunityRules.Rejected || post.ModerationStatus == CommunityRules.Hidden
                 ? dbContext.ModerationActions.Where(action => action.PostId == post.Id &&
-                    action.Action == CommunityRules.RejectionAction).OrderByDescending(action => action.CreatedAt)
+                    action.Action == (post.ModerationStatus == CommunityRules.Hidden
+                        ? CommunityRules.HideAction : CommunityRules.RejectionAction))
+                    .OrderByDescending(action => action.CreatedAt)
                     .ThenByDescending(action => action.Id).Select(action => action.Reason).FirstOrDefault()
                 : null,
             post.Media.OrderBy(media => media.SortOrder).ThenBy(media => media.Id)

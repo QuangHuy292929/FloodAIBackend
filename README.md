@@ -126,7 +126,7 @@ Lệnh thu hồi phiên cũ khi đổi vai trò. Admin đăng nhập lại để
 
 ## Cộng đồng
 
-Bảng tin công khai chỉ hiển thị bài và bình luận đã duyệt. Bài viết, bình luận và thay đổi của tác giả đi vào trạng thái `PENDING`. Tác giả xem lại nội dung và trạng thái trong các endpoint `/me`. Thao tác duyệt của Admin sẽ được triển khai ở gói riêng.
+Bài viết mới hoặc được cập nhật vào trạng thái `PENDING` để Admin duyệt trước khi lên bảng tin. Tác giả xem lại bài viết, bình luận và trạng thái trong các endpoint `/me`.
 
 | Endpoint | Chức năng |
 | --- | --- |
@@ -145,3 +145,18 @@ Bảng tin công khai chỉ hiển thị bài và bình luận đã duyệt. Bà
 Bảng tin hỗ trợ `type`, `from`, `to`, `page` và `pageSize`. Khoảng thời gian lọc theo ngày xuất bản, gồm `from` và loại trừ `to`. Trường `observedAt` và các mốc lọc dùng thời điểm ISO có múi giờ, ví dụ `2022-10-15T12:00:00+07:00`. Giá trị `postType` gồm `FLOOD_REPORT`, `WEATHER_UPDATE`, `DISCUSSION` và `OTHER`.
 
 Mỗi bài có tối đa 5 ảnh JPEG, PNG hoặc WebP, mỗi ảnh tối đa 5 MiB. Backend lưu tệp riêng trên máy chạy API và kiểm tra quyền khi tải xuống. Đặt `CommunityMedia:RootPath` để chọn thư mục lưu trên máy chạy API. Mặc định là thư mục ứng dụng cục bộ của tài khoản chạy process, dưới `FloodAI/community-media`. DB hiện có hỗ trợ các endpoint này qua các bảng cộng đồng đã tạo.
+
+### Kiểm duyệt và báo cáo
+
+Bình luận được công khai ngay khi gửi vào bài đã xuất bản. Giới hạn tần suất ghi cộng đồng vẫn áp dụng. Sửa bình luận đang công khai giữ nguyên khả năng hiển thị. Sửa bình luận bị ẩn hoặc từ chối đưa nó về `PENDING` để Admin xem lại. Trong hồ sơ riêng, tác giả có thể xem `moderationReason` khi nội dung bị ẩn hoặc từ chối.
+
+| Endpoint Admin | Chức năng |
+| --- | --- |
+| `GET /api/v1/admin/moderation/queue?kind=post` | Bài viết chờ duyệt. Dùng `kind=comment` để xem bình luận cần duyệt lại. |
+| `POST /api/v1/admin/posts/{id}/{decision}` | Duyệt, từ chối hoặc ẩn bài. |
+| `POST /api/v1/admin/comments/{id}/{decision}` | Duyệt, từ chối hoặc ẩn bình luận. |
+| `GET /api/v1/admin/content-reports` | Báo cáo chờ xử lý, ưu tiên nội dung có nhiều người báo cáo. Có thể lọc `postId` hoặc `commentId`. |
+| `POST /api/v1/admin/content-reports/{id}/resolve` | Gửi `{"resolution":"RESOLVED"}` hoặc `{"resolution":"DISMISSED"}`. |
+| `GET /api/v1/admin/moderation/history` | Nhật ký quyết định, có thể lọc `postId` hoặc `commentId`. |
+
+Dùng `approve`, `reject` hoặc `hide` cho `decision`. `reject` và `hide` cần JSON chứa `reason`. Báo cáo chỉ tạo việc cần xem xét. Admin quyết định ẩn dựa trên nội dung và lý do vi phạm.

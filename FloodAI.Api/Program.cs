@@ -42,6 +42,7 @@ builder.Services.AddScoped<HydrologyCatalogService>();
 builder.Services.AddScoped<CommunityPostService>();
 builder.Services.AddScoped<CommunityCommentsService>();
 builder.Services.AddScoped<CommunityMediaService>();
+builder.Services.AddScoped<CommunityModerationService>();
 builder.Services.AddSingleton<ICommunityMediaStore, LocalCommunityMediaStore>();
 builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<VanUcObservationStore>();

@@ -98,3 +98,28 @@ dotnet run --project FloodAI.Api --launch-profile http -- --register-van-uc-fore
 - `POST /api/v1/forecasts/historical` nhận JSON với `stationId` và `issueTimeLocal`, ví dụ `2022-10-15T12:00:00`. Giờ phát hành theo đồng hồ dữ liệu nguồn và phải đúng đầu giờ.
 
 API cần 48 giờ liên tiếp cho ba chuỗi đầu vào và trả dự báo mực nước Trung Trang ở `+1h`, `+3h`, `+6h`. Thực đo ở giờ mục tiêu được trả nếu có. Kết quả theo thang đo gốc và được đánh giá với **Q95 = 142**, ngưỡng nghiên cứu trên dữ liệu lịch sử. Lượt chạy và kết quả so ngưỡng được lưu trong PostgreSQL. Yêu cầu cùng trạm, giờ phát hành, model và đầu vào có thể dùng lại lượt chạy đã lưu.
+
+## Tài khoản và phân quyền
+
+Áp dụng migration `AddUserSessions` vào database mà bạn dùng để phát triển trước khi thử đăng nhập. Migration tạo bảng `user_sessions`.
+
+| Endpoint | Quyền | Chức năng |
+| --- | --- | --- |
+| `POST /api/v1/auth/register` | Công khai | Đăng ký với `email`, `password`, `displayName`. Tài khoản mới có vai trò `USER`. |
+| `POST /api/v1/auth/login` | Công khai | Đăng nhập bằng `email`, `password`. Trả `accessToken` và thời hạn phiên. |
+| `POST /api/v1/auth/logout` | Đăng nhập | Thu hồi phiên hiện tại. |
+| `GET /api/v1/me` và `PATCH /api/v1/me` | Đăng nhập | Xem hồ sơ hoặc đổi `displayName`. |
+| `POST /api/v1/auth/change-password` | Đăng nhập | Gửi `currentPassword` và `newPassword`. Đổi mật khẩu thu hồi mọi phiên. |
+| `POST /api/v1/auth/forgot-password` | Công khai | Gửi `email` để nhận token đặt lại mật khẩu khi SMTP đã được cấu hình. |
+| `POST /api/v1/auth/reset-password` | Công khai | Dùng `token` trong email và `newPassword`. Token hết hạn sau 30 phút. |
+| `PATCH /api/v1/admin/users/{id}/status` | `ADMIN` | Gửi `{"locked":true}` để khóa tài khoản `USER` hoặc `{"locked":false}` để mở khóa. |
+
+Gửi token trong header `Authorization: Bearer <accessToken>` qua HTTPS. Phiên hết hạn sau 8 giờ, sau đó người dùng đăng nhập lại. Để cấp vai trò Admin cho một tài khoản đã đăng ký, chạy lệnh nội bộ trong thư mục `backend`:
+
+```powershell
+dotnet run --project FloodAI.Api --launch-profile https -- --promote-admin admin@example.com
+```
+
+Lệnh thu hồi phiên cũ khi đổi vai trò. Admin đăng nhập lại để nhận phiên mới.
+
+Để bật email đặt lại mật khẩu, cấu hình `AuthSmtp:Host`, `AuthSmtp:Port`, `AuthSmtp:From` và thông tin `AuthSmtp:Username`, `AuthSmtp:Password` nếu máy chủ yêu cầu xác thực. Lưu thông tin xác thực trong User Secrets khi phát triển. Cổng mặc định là `587` với STARTTLS, cổng `465` dùng TLS ngay khi kết nối. Có thể đặt `Auth:DataProtectionKeysPath` nếu cần lưu khóa bảo vệ token ở thư mục riêng.

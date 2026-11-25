@@ -160,3 +160,19 @@ Bình luận được công khai ngay khi gửi vào bài đã xuất bản. Gi�
 | `GET /api/v1/admin/moderation/history` | Nhật ký quyết định, có thể lọc `postId` hoặc `commentId`. |
 
 Dùng `approve`, `reject` hoặc `hide` cho `decision`. `reject` và `hide` cần JSON chứa `reason`. Báo cáo chỉ tạo việc cần xem xét. Admin quyết định ẩn dựa trên nội dung và lý do vi phạm.
+
+## Theo dõi cá nhân
+
+Các endpoint dưới đây yêu cầu Bearer token của người dùng. Dùng ID từ API danh mục khu vực hoặc trạm.
+
+| Endpoint | Kết quả |
+| --- | --- |
+| `GET /api/v1/me/followed-areas` | Khu vực đang hoạt động mà tài khoản đang theo dõi |
+| `PUT /api/v1/me/followed-areas/{areaId}` | Theo dõi khu vực |
+| `DELETE /api/v1/me/followed-areas/{areaId}` | Bỏ theo dõi khu vực |
+| `GET /api/v1/me/followed-areas/posts?page=1&pageSize=20` | Bài đã xuất bản ở các khu vực đang theo dõi và khu vực con đang hoạt động, mới nhất trước |
+| `GET /api/v1/me/followed-stations` | Trạm đang theo dõi trong các lưu vực hoạt động, kèm ID để truy cập dữ liệu quan trắc |
+| `PUT /api/v1/me/followed-stations/{stationId}` | Theo dõi trạm |
+| `DELETE /api/v1/me/followed-stations/{stationId}` | Bỏ theo dõi trạm |
+
+`PUT` và `DELETE` thành công trả `204`. Gửi lại `PUT` giữ thời điểm theo dõi ban đầu. `PUT` với đối tượng thiếu hoặc không hoạt động trả `404`.

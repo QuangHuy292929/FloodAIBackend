@@ -16,26 +16,10 @@ public sealed class CommunityPostService(FloodAiDbContext dbContext)
         long areaId, string? type, DateTimeOffset? from, DateTimeOffset? to,
         int page, int pageSize, CancellationToken cancellationToken)
     {
-        var links = await dbContext.Areas.AsNoTracking().Where(area => area.IsActive)
-            .Select(area => new { area.Id, area.ParentId }).ToListAsync(cancellationToken);
-        if (!links.Any(area => area.Id == areaId))
+        var visibleAreaIds = await GetVisibleAreaIdsAsync([areaId], cancellationToken);
+        if (visibleAreaIds.Count == 0)
         {
             return null;
-        }
-
-        var children = links.ToLookup(area => area.ParentId);
-        var visibleAreaIds = new HashSet<long> { areaId };
-        var areasToVisit = new Queue<long>();
-        areasToVisit.Enqueue(areaId);
-        while (areasToVisit.TryDequeue(out var parent))
-        {
-            foreach (var child in children[parent])
-            {
-                if (visibleAreaIds.Add(child.Id))
-                {
-                    areasToVisit.Enqueue(child.Id);
-                }
-            }
         }
 
         var query = CommunityQueries.PublishedPosts(dbContext).Where(post => visibleAreaIds.Contains(post.AreaId));
@@ -52,9 +36,48 @@ public sealed class CommunityPostService(FloodAiDbContext dbContext)
             query = query.Where(post => post.PublishedAt < to);
         }
 
-        return await Views(query.OrderByDescending(post => post.PublishedAt).ThenByDescending(post => post.Id))
-            .PageAsync(page, pageSize, cancellationToken);
+        return await ReadFeedPageAsync(query, page, pageSize, cancellationToken);
     }
+
+    internal async Task<CommunityPage<CommunityPostView>> GetFollowedFeedAsync(
+        IReadOnlyCollection<long> areaIds, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        if (areaIds.Count == 0)
+        {
+            return new CommunityPage<CommunityPostView>(page, pageSize, false, []);
+        }
+
+        var visibleAreaIds = await GetVisibleAreaIdsAsync(areaIds, cancellationToken);
+        var query = CommunityQueries.PublishedPosts(dbContext).Where(post => visibleAreaIds.Contains(post.AreaId));
+        return await ReadFeedPageAsync(query, page, pageSize, cancellationToken);
+    }
+
+    private async Task<HashSet<long>> GetVisibleAreaIdsAsync(
+        IReadOnlyCollection<long> rootIds, CancellationToken cancellationToken)
+    {
+        var links = await dbContext.Areas.AsNoTracking().Where(area => area.IsActive)
+            .Select(area => new { area.Id, area.ParentId }).ToListAsync(cancellationToken);
+
+        var children = links.ToLookup(area => area.ParentId);
+        var visible = links.Where(area => rootIds.Contains(area.Id)).Select(area => area.Id).ToHashSet();
+        var queue = new Queue<long>(visible);
+        while (queue.TryDequeue(out var parentId))
+        {
+            foreach (var child in children[parentId])
+            {
+                if (visible.Add(child.Id))
+                {
+                    queue.Enqueue(child.Id);
+                }
+            }
+        }
+        return visible;
+    }
+
+    private Task<CommunityPage<CommunityPostView>> ReadFeedPageAsync(
+        IQueryable<CommunityPost> query, int page, int pageSize, CancellationToken cancellationToken) =>
+        Views(query.OrderByDescending(post => post.PublishedAt).ThenByDescending(post => post.Id))
+            .PageAsync(page, pageSize, cancellationToken);
 
     public Task<CommunityPostView?> GetPublishedAsync(long id, CancellationToken cancellationToken) =>
         Views(CommunityQueries.PublishedPosts(dbContext).Where(post => post.Id == id))

@@ -71,3 +71,29 @@ Content-Type: application/json
 # Replace the placeholder with accessToken from login.
 GET https://localhost:7202/api/v1/me
 Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+
+
+###
+
+GET {{host}}/api/v1/areas
+Accept: application/json
+
+###
+
+# Replace the area ID with an active area ID.
+GET {{host}}/api/v1/areas/1/posts?type=FLOOD_REPORT&page=1&pageSize=20
+Accept: application/json
+
+###
+
+POST https://localhost:7202/api/v1/posts
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "areaId": 1,
+  "title": "Tình hình mưa",
+  "content": "Cập nhật ghi nhận tại địa phương.",
+  "postType": "WEATHER_UPDATE",
+  "observedAt": "2022-10-15T12:00:00+07:00"
+}

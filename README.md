@@ -123,3 +123,25 @@ dotnet run --project FloodAI.Api --launch-profile https -- --promote-admin admin
 Lệnh thu hồi phiên cũ khi đổi vai trò. Admin đăng nhập lại để nhận phiên mới.
 
 Để bật email đặt lại mật khẩu, cấu hình `AuthSmtp:Host`, `AuthSmtp:Port`, `AuthSmtp:From` và thông tin `AuthSmtp:Username`, `AuthSmtp:Password` nếu máy chủ yêu cầu xác thực. Lưu thông tin xác thực trong User Secrets khi phát triển. Cổng mặc định là `587` với STARTTLS, cổng `465` dùng TLS ngay khi kết nối. Có thể đặt `Auth:DataProtectionKeysPath` nếu cần lưu khóa bảo vệ token ở thư mục riêng.
+
+## Cộng đồng
+
+Bảng tin công khai chỉ hiển thị bài và bình luận đã duyệt. Bài viết, bình luận và thay đổi của tác giả đi vào trạng thái `PENDING`. Tác giả xem lại nội dung và trạng thái trong các endpoint `/me`. Thao tác duyệt của Admin sẽ được triển khai ở gói riêng.
+
+| Endpoint | Chức năng |
+| --- | --- |
+| `GET /api/v1/areas` | Danh mục khu vực hoạt động |
+| `GET /api/v1/areas/{id}/posts` | Bảng tin công khai của khu vực và các khu vực con hoạt động |
+| `GET /api/v1/posts/{id}` | Chi tiết bài công khai |
+| `GET /api/v1/posts/{id}/comments` | Bình luận công khai của bài |
+| `GET /api/v1/me/posts` và `GET /api/v1/me/posts/{id}` | Bài viết của người đăng nhập, kèm trạng thái và lý do từ chối nếu có |
+| `GET /api/v1/me/comments` và `GET /api/v1/me/comments/{id}` | Bình luận của người đăng nhập |
+| `POST /api/v1/posts`, `PATCH /api/v1/posts/{id}`, `DELETE /api/v1/posts/{id}` | Đăng bài, cập nhật trường được gửi hoặc xóa mềm bài của mình |
+| `POST /api/v1/posts/{id}/comments`, `PATCH /api/v1/comments/{id}`, `DELETE /api/v1/comments/{id}` | Bình luận dưới bài công khai, sửa hoặc xóa mềm bình luận của mình |
+| `POST /api/v1/posts/{id}/media` | Tải một ảnh qua `multipart/form-data` với trường `file` |
+| `GET /api/v1/posts/{id}/media/{mediaId}`, `DELETE /api/v1/posts/{id}/media/{mediaId}` | Đọc ảnh theo quyền xem bài, hoặc xóa ảnh khỏi bài của mình |
+| `POST /api/v1/content-reports` | Báo cáo đúng một bài hoặc bình luận công khai bằng `postId` hoặc `commentId` và `reason` |
+
+Bảng tin hỗ trợ `type`, `from`, `to`, `page` và `pageSize`. Khoảng thời gian lọc theo ngày xuất bản, gồm `from` và loại trừ `to`. Trường `observedAt` và các mốc lọc dùng thời điểm ISO có múi giờ, ví dụ `2022-10-15T12:00:00+07:00`. Giá trị `postType` gồm `FLOOD_REPORT`, `WEATHER_UPDATE`, `DISCUSSION` và `OTHER`.
+
+Mỗi bài có tối đa 5 ảnh JPEG, PNG hoặc WebP, mỗi ảnh tối đa 5 MiB. Backend lưu tệp riêng trên máy chạy API và kiểm tra quyền khi tải xuống. Đặt `CommunityMedia:RootPath` để chọn thư mục lưu trên máy chạy API. Mặc định là thư mục ứng dụng cục bộ của tài khoản chạy process, dưới `FloodAI/community-media`. DB hiện có hỗ trợ các endpoint này qua các bảng cộng đồng đã tạo.

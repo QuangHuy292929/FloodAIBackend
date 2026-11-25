@@ -44,7 +44,8 @@ public sealed class CommunityCommentsService(FloodAiDbContext dbContext)
             PostId = postId,
             AuthorId = userId,
             Content = content.Trim(),
-            ModerationStatus = CommunityRules.Pending
+            ModerationStatus = CommunityRules.Approved,
+            PublishedAt = DateTimeOffset.UtcNow
         };
         dbContext.PostComments.Add(comment);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -53,11 +54,17 @@ public sealed class CommunityCommentsService(FloodAiDbContext dbContext)
         return view;
     }
 
-    public async Task<bool> EditAsync(long userId, long id, string content, CancellationToken cancellationToken) =>
-        await OwnComments(userId).Where(comment => comment.Id == id).ExecuteUpdateAsync(updates => updates
+    public async Task<bool> EditAsync(long userId, long id, string content, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        return await OwnComments(userId).Where(comment => comment.Id == id).ExecuteUpdateAsync(updates => updates
             .SetProperty(comment => comment.Content, content.Trim())
-            .SetProperty(comment => comment.ModerationStatus, CommunityRules.Pending)
-            .SetProperty(comment => comment.PublishedAt, (DateTimeOffset?)null), cancellationToken) == 1;
+            .SetProperty(comment => comment.ModerationStatus, comment =>
+                comment.ModerationStatus == CommunityRules.Approved ? CommunityRules.Approved : CommunityRules.Pending)
+            .SetProperty(comment => comment.PublishedAt, comment =>
+                comment.ModerationStatus == CommunityRules.Approved ? comment.PublishedAt ?? now : null),
+            cancellationToken) == 1;
+    }
 
     public async Task<bool> DeleteAsync(long userId, long id, CancellationToken cancellationToken) =>
         await OwnComments(userId).Where(comment => comment.Id == id).ExecuteUpdateAsync(updates => updates
@@ -96,9 +103,11 @@ public sealed class CommunityCommentsService(FloodAiDbContext dbContext)
         comments.Select(comment => new CommunityCommentView(
             comment.Id, comment.PostId, new CommunityAuthor(comment.AuthorId, comment.Author.DisplayName),
             comment.Content, comment.ModerationStatus, comment.CreatedAt, comment.PublishedAt,
-            comment.ModerationStatus == CommunityRules.Rejected
+            comment.ModerationStatus == CommunityRules.Rejected || comment.ModerationStatus == CommunityRules.Hidden
                 ? dbContext.ModerationActions.Where(action => action.CommentId == comment.Id &&
-                    action.Action == CommunityRules.RejectionAction).OrderByDescending(action => action.CreatedAt)
+                    action.Action == (comment.ModerationStatus == CommunityRules.Hidden
+                        ? CommunityRules.HideAction : CommunityRules.RejectionAction))
+                    .OrderByDescending(action => action.CreatedAt)
                     .ThenByDescending(action => action.Id).Select(action => action.Reason).FirstOrDefault()
                 : null));
 }

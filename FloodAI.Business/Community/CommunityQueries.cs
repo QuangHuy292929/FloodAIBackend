@@ -9,9 +9,11 @@ public static class CommunityRules
     public const string Pending = "PENDING";
     public const string Approved = "APPROVED";
     public const string Rejected = "REJECTED";
+    public const string Hidden = "HIDDEN";
     public const int MaxImagesPerPost = 5;
 
     internal const string RejectionAction = "REJECT";
+    internal const string HideAction = "HIDE";
 
     public static bool IsPostType(string? type) =>
         type is "FLOOD_REPORT" or "WEATHER_UPDATE" or "DISCUSSION" or "OTHER";

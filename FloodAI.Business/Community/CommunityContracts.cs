@@ -16,11 +16,17 @@ public sealed record CommunityPostChanges(
 public sealed record CommunityPostView(
     long Id, long AreaId, long? StationId, CommunityAuthor Author, string Title, string Content,
     string PostType, DateTimeOffset ObservedAt, string ModerationStatus, DateTimeOffset? PublishedAt,
-    string? RejectionReason, IReadOnlyList<CommunityMedia> Media);
+    string? ModerationReason, IReadOnlyList<CommunityMedia> Media)
+{
+    public string? RejectionReason => ModerationStatus == CommunityRules.Rejected ? ModerationReason : null;
+}
 
 public sealed record CommunityCommentView(
     long Id, long PostId, CommunityAuthor Author, string Content, string ModerationStatus,
-    DateTimeOffset CreatedAt, DateTimeOffset? PublishedAt, string? RejectionReason);
+    DateTimeOffset CreatedAt, DateTimeOffset? PublishedAt, string? ModerationReason)
+{
+    public string? RejectionReason => ModerationStatus == CommunityRules.Rejected ? ModerationReason : null;
+}
 
 public sealed record CommunityReportView(long Id, string Status);
 

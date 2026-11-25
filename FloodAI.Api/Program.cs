@@ -1,9 +1,11 @@
 using FloodAI.Api.Authentication;
 using FloodAI.Api.Commands;
+using FloodAI.Api.Community;
 using FloodAI.Api.Middleware;
 using FloodAI.Api.OpenApi;
 using FloodAI.Business.Accounts;
 using FloodAI.Business.Catalog;
+using FloodAI.Business.Community;
 using FloodAI.Business.Forecasting;
 using FloodAI.Business.Observations;
 using FloodAI.DataAccess;
@@ -37,6 +39,10 @@ builder.Services.AddAuthentication(AccountBearerHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, AccountBearerHandler>(AccountBearerHandler.SchemeName, _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<HydrologyCatalogService>();
+builder.Services.AddScoped<CommunityPostService>();
+builder.Services.AddScoped<CommunityCommentsService>();
+builder.Services.AddScoped<CommunityMediaService>();
+builder.Services.AddSingleton<ICommunityMediaStore, LocalCommunityMediaStore>();
 builder.Services.AddScoped<ObservationService>();
 builder.Services.AddScoped<VanUcObservationStore>();
 builder.Services.AddScoped<VanUcForecastObservations>();
@@ -54,6 +60,7 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy(HistoricalForecastApiConvention.RateLimitPolicy, PerClientRateLimit);
     options.AddPolicy(AccountBearerHandler.RateLimitPolicy, PerClientRateLimit);
+    options.AddPolicy(CommunityRequests.WritePolicy, PerClientRateLimit);
 });
 builder.Services.AddDbContext<FloodAiDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("FloodAI")));

@@ -43,3 +43,31 @@ Content-Type: application/json
   "stationId": 1,
   "issueTimeLocal": "2022-10-15T12:00:00"
 }
+
+
+###
+
+POST https://localhost:7202/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "demo@example.com",
+  "password": "Demo-Change-Me-2026",
+  "displayName": "FloodAI Demo"
+}
+
+###
+
+POST https://localhost:7202/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@example.com",
+  "password": "Demo-Change-Me-2026"
+}
+
+###
+
+# Replace the placeholder with accessToken from login.
+GET https://localhost:7202/api/v1/me
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN

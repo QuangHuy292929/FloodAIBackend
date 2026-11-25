@@ -770,6 +770,36 @@ namespace FloodAI.DataAccess.Migrations
                     b.ToTable("user_area_follows", (string)null);
                 });
 
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.UserSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_sessions", (string)null);
+                });
+
             modelBuilder.Entity("FloodAI.DataAccess.Entities.UserStationFollow", b =>
                 {
                     b.Property<long>("UserId")
@@ -1066,6 +1096,17 @@ namespace FloodAI.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Area");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.UserSession", b =>
+                {
+                    b.HasOne("FloodAI.DataAccess.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

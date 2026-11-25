@@ -10,6 +10,7 @@ public sealed class FloodAiDbContext(DbContextOptions<FloodAiDbContext> options)
     public DbSet<Basin> Basins => Set<Basin>();
     public DbSet<Station> Stations => Set<Station>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<DataSource> DataSources => Set<DataSource>();
     public DbSet<Metric> Metrics => Set<Metric>();
     public DbSet<Observation> Observations => Set<Observation>();

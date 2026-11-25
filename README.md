@@ -97,7 +97,7 @@ dotnet run --project FloodAI.Api --launch-profile http -- --register-van-uc-fore
 - `GET /api/v1/stations/{id}/models` trả danh sách mô hình Văn Úc đang hoạt động cho trạm.
 - `POST /api/v1/forecasts/historical` nhận JSON với `stationId` và `issueTimeLocal`, ví dụ `2022-10-15T12:00:00`. Giờ phát hành theo đồng hồ dữ liệu nguồn và phải đúng đầu giờ.
 
-API cần 48 giờ liên tiếp cho ba chuỗi đầu vào và trả dự báo mực nước Trung Trang ở `+1h`, `+3h`, `+6h`. Thực đo ở giờ mục tiêu được trả nếu có. Kết quả theo thang đo gốc và được đánh giá với **Q95 = 142**, ngưỡng nghiên cứu trên dữ liệu lịch sử. Lượt chạy và kết quả so ngưỡng được lưu trong PostgreSQL. Yêu cầu cùng trạm, giờ phát hành, model và đầu vào có thể dùng lại lượt chạy đã lưu.
+API cần 48 giờ liên tiếp cho ba chuỗi đầu vào và trả dự báo mực nước Trung Trang ở `+1h`, `+3h`, `+6h`. Thực đo ở giờ mục tiêu được trả nếu có. Kết quả theo thang đo gốc và được đánh giá với **Q95 = 142**, ngưỡng nghiên cứu trên dữ liệu lịch sử. Mỗi yêu cầu hợp lệ gọi `POST /predict` của worker Python, kể cả khi trạm, giờ và dữ liệu đầu vào trùng với lượt trước. Backend lưu một lượt chạy mới cùng kết quả so ngưỡng trong PostgreSQL. Khi worker không khả dụng, API trả HTTP `503`.
 
 ## Tài khoản và phân quyền
 

@@ -66,6 +66,8 @@ public sealed class VanUcForecastObservations(FloodAiDbContext dbContext)
         var start = issueTime.AddHours(1 - VanUcForecastDefinition.HistoryHours);
         var values = await dbContext.Observations.AsNoTracking()
             .Where(observation => observation.SourceId == series.SourceId &&
+                observation.QualityStatus != ObservationQuality.Suspect &&
+                observation.QualityStatus != ObservationQuality.Invalid &&
                 observation.TimestampLocal >= start && observation.TimestampLocal <= issueTime &&
                 ((observation.StationId == stationId &&
                     (observation.MetricId == series.WaterLevelId || observation.MetricId == series.DischargeId)) ||
@@ -100,7 +102,9 @@ public sealed class VanUcForecastObservations(FloodAiDbContext dbContext)
         var targetTimes = VanUcForecastDefinition.Horizons.Select(horizon => issueTime.AddHours(horizon)).ToArray();
         return dbContext.Observations.AsNoTracking()
             .Where(observation => observation.SourceId == series.SourceId && observation.StationId == stationId &&
-                observation.MetricId == series.WaterLevelId && targetTimes.Contains(observation.TimestampLocal))
+                observation.MetricId == series.WaterLevelId && targetTimes.Contains(observation.TimestampLocal) &&
+                observation.QualityStatus != ObservationQuality.Suspect &&
+                observation.QualityStatus != ObservationQuality.Invalid)
             .ToDictionaryAsync(observation => observation.TimestampLocal,
                 observation => observation.ValueRaw, cancellationToken);
     }

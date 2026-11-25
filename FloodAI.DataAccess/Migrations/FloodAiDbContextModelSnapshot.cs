@@ -99,6 +99,49 @@ namespace FloodAI.DataAccess.Migrations
                     b.ToTable("basins", (string)null);
                 });
 
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.CatalogAction", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<long>("AdminId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("admin_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("ResourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("resource_key");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("resource_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminId");
+
+                    b.HasIndex("CreatedAt", "Id");
+
+                    b.ToTable("catalog_actions", (string)null);
+                });
+
             modelBuilder.Entity("FloodAI.DataAccess.Entities.CommunityPost", b =>
                 {
                     b.Property<long>("Id")
@@ -868,6 +911,17 @@ namespace FloodAI.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.CatalogAction", b =>
+                {
+                    b.HasOne("FloodAI.DataAccess.Entities.User", "Admin")
+                        .WithMany()
+                        .HasForeignKey("AdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Admin");
                 });
 
             modelBuilder.Entity("FloodAI.DataAccess.Entities.CommunityPost", b =>

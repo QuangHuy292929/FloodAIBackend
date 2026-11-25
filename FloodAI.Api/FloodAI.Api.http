@@ -27,3 +27,19 @@ Accept: application/json
 
 GET {{host}}/api/v1/stations/1/observations?metric=water_level&from=2021-01-01&to=2021-01-02&pageSize=12
 Accept: application/json
+
+###
+
+GET {{host}}/api/v1/stations/1/models
+Accept: application/json
+
+###
+
+# Replace stationId with the registered Trung Trang station ID.
+POST {{host}}/api/v1/forecasts/historical
+Content-Type: application/json
+
+{
+  "stationId": 1,
+  "issueTimeLocal": "2022-10-15T12:00:00"
+}

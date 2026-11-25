@@ -15,8 +15,8 @@ public sealed class VanUcObservationStore(FloodAiDbContext dbContext)
         CancellationToken cancellationToken)
     {
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-        await dbContext.Database.ExecuteSqlRawAsync(
-            "SELECT pg_advisory_xact_lock(hashtext('floodai:van_uc_hourly:2021-2022'));", cancellationToken);
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtext({ImportLockKey}));", cancellationToken);
 
         var stationCount = await dbContext.Stations.CountAsync(station =>
             (station.Id == trungTrangId || station.Id == honDauId) &&
@@ -61,7 +61,7 @@ public sealed class VanUcObservationStore(FloodAiDbContext dbContext)
 
         var inserted = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
             INSERT INTO observations (station_id, metric_id, source_id, timestamp_local, value_raw, quality_status)
-            SELECT station_id, metric_id, {sourceId}, timestamp_local, value_raw, 'SOURCE_UNVERIFIED'
+            SELECT station_id, metric_id, {sourceId}, timestamp_local, value_raw, {ObservationQuality.SourceUnverified}
             FROM pg_temp.van_uc_observation_import
             ON CONFLICT (station_id, metric_id, source_id, timestamp_local) DO NOTHING;
             """, cancellationToken);

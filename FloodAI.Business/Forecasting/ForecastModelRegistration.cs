@@ -1,3 +1,4 @@
+using FloodAI.Business.Catalog.Admin;
 using FloodAI.DataAccess;
 using FloodAI.DataAccess.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace FloodAI.Business.Forecasting;
 public sealed class ForecastModelRegistration(
     FloodAiDbContext dbContext, VanUcForecastObservations observations, ForecastInferenceClient inference)
 {
-    public async Task RegisterAsync(long stationId, CancellationToken cancellationToken)
+    public async Task RegisterAsync(long stationId, CancellationToken cancellationToken, long? adminId = null)
     {
         await observations.ResolveSeriesAsync(stationId, cancellationToken);
         var bundle = await inference.GetBundleAsync(cancellationToken);
@@ -22,9 +23,7 @@ public sealed class ForecastModelRegistration(
         }
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var lockKey = FormattableString.Invariant($"floodai:van_uc_model_registration:{stationId}");
-        await dbContext.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0));", cancellationToken);
+        await LockStationAsync(dbContext, stationId, cancellationToken);
 
         var existingModels = await dbContext.ForecastModels.Where(model =>
             model.StationId == stationId && model.Version == bundle.Version)
@@ -54,16 +53,15 @@ public sealed class ForecastModelRegistration(
         }
 
         var thresholds = await dbContext.StationThresholds.Where(threshold =>
-            threshold.StationId == stationId && threshold.ThresholdType == VanUcForecastDefinition.ThresholdType &&
-            threshold.IsActive).OrderBy(threshold => threshold.Id).Take(2).ToListAsync(cancellationToken);
-        if (thresholds.Count > 1 || thresholds.Any(threshold =>
-            threshold.ValueRaw != bundle.ThresholdValueRaw || threshold.Source != VanUcForecastDefinition.ThresholdSource ||
-            threshold.UnitStatus != VanUcForecastDefinition.UnitStatus))
+            threshold.StationId == stationId && threshold.ThresholdType == VanUcForecastDefinition.ThresholdType)
+            .ToListAsync(cancellationToken);
+        var activeThresholds = thresholds.Where(threshold => threshold.IsActive).ToList();
+        if (activeThresholds.Count > 1 || activeThresholds.Any(threshold => !IsResearchThreshold(threshold)))
         {
             throw new ForecastException(ForecastError.Unavailable, "The station has a conflicting Q95 research threshold.");
         }
 
-        if (thresholds.Count == 0)
+        if (!thresholds.Any(IsResearchThreshold))
         {
             dbContext.StationThresholds.Add(new StationThreshold
             {
@@ -76,7 +74,27 @@ public sealed class ForecastModelRegistration(
             });
         }
 
+        if (adminId is { } actor)
+        {
+            CatalogAudit.Record(dbContext, actor, "REGISTER", "FORECAST_BUNDLE",
+                FormattableString.Invariant($"{stationId}:{bundle.Version}"));
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    internal static bool IsResearchThreshold(StationThreshold threshold) =>
+        threshold.ThresholdType == VanUcForecastDefinition.ThresholdType &&
+        threshold.ValueRaw == VanUcForecastDefinition.ResearchThreshold &&
+        threshold.Source == VanUcForecastDefinition.ThresholdSource &&
+        threshold.UnitStatus == VanUcForecastDefinition.UnitStatus;
+
+    internal static Task LockStationAsync(
+        FloodAiDbContext dbContext, long stationId, CancellationToken cancellationToken)
+    {
+        var lockKey = FormattableString.Invariant($"floodai:van_uc_model_registration:{stationId}");
+        return dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0));", cancellationToken);
     }
 }

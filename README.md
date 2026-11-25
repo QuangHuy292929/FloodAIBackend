@@ -176,3 +176,25 @@ Các endpoint dưới đây yêu cầu Bearer token của người dùng. Dùng 
 | `DELETE /api/v1/me/followed-stations/{stationId}` | Bỏ theo dõi trạm |
 
 `PUT` và `DELETE` thành công trả `204`. Gửi lại `PUT` giữ thời điểm theo dõi ban đầu. `PUT` với đối tượng thiếu hoặc không hoạt động trả `404`.
+
+## Quản trị danh mục
+
+Các API bên dưới cần Bearer token của tài khoản `ADMIN`. Áp dụng migration `AddCatalogActions` vào cơ sở dữ liệu đích trước khi dùng các thao tác ghi và xem nhật ký.
+
+| Endpoint | Chức năng |
+| --- | --- |
+| `GET`, `POST /api/v1/admin/catalog/{collection}`, `PUT /api/v1/admin/catalog/{collection}/{id}` | Liệt kê, thêm và cập nhật. Các collection là `basins`, `areas`, `stations`, `sources` và `metrics`. |
+| `GET /api/v1/admin/catalog/observations` | Đọc giá trị và metadata, lọc theo `stationId` hoặc `qualityStatus`. |
+| `PUT /api/v1/admin/catalog/observations/{id}/metadata` | Cập nhật `qualityStatus` và `availableAt`. |
+| `GET /api/v1/admin/catalog/actions` | Xem nhật ký, có thể lọc `resourceType` như `BASIN` hoặc `FORECAST_BUNDLE`. |
+| `GET /api/v1/admin/stations/{stationId}/models` | Xem phiên bản, kỳ dự báo, tệp mô hình và trạng thái đăng ký. |
+| `POST /api/v1/admin/stations/{stationId}/models/register-van-uc` | Đăng ký bộ mô hình từ worker Văn Úc và ngưỡng Q95. Cần dữ liệu quan trắc đã nhập và worker đang chạy. |
+| `PATCH /api/v1/admin/stations/{stationId}/models/{version}/status` | Bật hoặc tắt đồng thời các kỳ của một phiên bản. |
+| `GET /api/v1/admin/stations/{stationId}/thresholds` | Xem ngưỡng, nguồn, tình trạng đơn vị và trạng thái kích hoạt. |
+| `PATCH /api/v1/admin/stations/{stationId}/thresholds/{thresholdId}/status` | Bật hoặc tắt ngưỡng Q95 đã đăng ký. |
+
+Khi cập nhật danh mục, gửi đầy đủ trường của đối tượng. Mã danh mục, lưu vực của trạm, tên và loại nguồn, và loại đại lượng của metric được cố định sau khi tạo. Dùng `isActive: false` để tắt lưu vực, khu vực hoặc nguồn. Trạm thuộc lưu vực đã tắt sẽ bị ẩn khỏi API danh mục công khai. Trạm và đại lượng hiện dùng cấu trúc dữ liệu gốc, không có trường trạng thái riêng.
+
+Danh sách quan trắc và nhật ký nhận `page` và `pageSize`. Mỗi trang có tối đa 100 bản ghi. Chất lượng quan trắc gồm `SOURCE_UNVERIFIED`, `VALID`, `SUSPECT` và `INVALID`. Gửi `availableAt` theo ISO 8601 có múi giờ hoặc gửi `null` để xóa thời điểm. Giá trị và giờ gốc của nguồn được giữ nguyên. Dự báo lịch sử bỏ qua bản ghi `SUSPECT` và `INVALID` khi lấy đầu vào và thực đo để đối chiếu.
+
+Các thao tác bật hoặc tắt dùng JSON `{"isActive":false}` hoặc `{"isActive":true}`. Đăng ký lại giữ trạng thái của bộ mô hình và ngưỡng đã có. Q95 bằng 142 theo thang đo gốc trong manifest và giữ nguồn gốc để đối chiếu các đánh giá đã lưu.

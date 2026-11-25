@@ -3,6 +3,7 @@ namespace FloodAI.DataAccess.Observations;
 public static class VanUcObservationDataset
 {
     public const string BasinCode = "van_uc";
+    public const string ImportLockKey = "floodai:van_uc_hourly:2021-2022";
     public const string SourceName = "Văn Úc 2021–2022";
     public const string SourceType = "HISTORICAL_CSV";
     public const string WaterLevelCode = "water_level";

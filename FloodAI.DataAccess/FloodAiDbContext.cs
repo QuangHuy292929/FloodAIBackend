@@ -7,6 +7,7 @@ public sealed class FloodAiDbContext(DbContextOptions<FloodAiDbContext> options)
     : DbContext(options)
 {
     public DbSet<Area> Areas => Set<Area>();
+    public DbSet<CatalogAction> CatalogActions => Set<CatalogAction>();
     public DbSet<Basin> Basins => Set<Basin>();
     public DbSet<Station> Stations => Set<Station>();
     public DbSet<User> Users => Set<User>();

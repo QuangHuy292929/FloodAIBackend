@@ -2,16 +2,12 @@ using FloodAI.DataAccess.Entities;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
+using static FloodAI.DataAccess.Observations.VanUcObservationDataset;
 
 namespace FloodAI.DataAccess.Observations;
 
 public sealed class VanUcObservationStore(FloodAiDbContext dbContext)
 {
-    private const string SourceName = "Văn Úc 2021–2022";
-    private const string SourceType = "HISTORICAL_CSV";
-    private const string WaterLevelCode = "water_level";
-    private const string DischargeCode = "discharge";
-
     public async Task<int> ImportAsync(
         IReadOnlyList<VanUcHourlyRow> rows,
         long trungTrangId,
@@ -24,7 +20,7 @@ public sealed class VanUcObservationStore(FloodAiDbContext dbContext)
 
         var stationCount = await dbContext.Stations.CountAsync(station =>
             (station.Id == trungTrangId || station.Id == honDauId) &&
-            station.Basin.Code == "van_uc" && station.Basin.IsActive, cancellationToken);
+            station.Basin.Code == BasinCode && station.Basin.IsActive, cancellationToken);
         if (stationCount != 2)
         {
             throw new InvalidOperationException(

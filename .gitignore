@@ -5,3 +5,7 @@
 
 # Local Codex progress notes
 /PROGRESS.md
+
+# Local Python inference environment
+/.venv-inference/
+**/__pycache__/

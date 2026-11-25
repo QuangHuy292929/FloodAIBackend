@@ -1,4 +1,5 @@
 using FloodAI.DataAccess;
+using FloodAI.DataAccess.Observations;
 using Microsoft.EntityFrameworkCore;
 
 namespace FloodAI.Business.Observations;
@@ -63,7 +64,7 @@ public sealed class ObservationService(FloodAiDbContext dbContext)
             observations.RemoveAt(pageSize);
         }
 
-        return new ObservationPage(metric, from, to, "SOURCE_LOCAL_UNVERIFIED",
+        return new ObservationPage(metric, from, to, VanUcObservationDataset.TimeBasis,
             page, pageSize, hasNextPage, observations);
     }
 

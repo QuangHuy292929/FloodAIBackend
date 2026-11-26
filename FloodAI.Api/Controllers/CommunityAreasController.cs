@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using FloodAI.Api.Community;
 using FloodAI.Business.Community;
 using Microsoft.AspNetCore.Mvc;
@@ -9,8 +10,10 @@ namespace FloodAI.Api.Controllers;
 public sealed class CommunityAreasController(CommunityPostService posts) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<List<CommunityArea>>> GetAreas(CancellationToken cancellationToken) =>
-        await posts.GetAreasAsync(cancellationToken);
+    public async Task<ActionResult<List<CommunityArea>>> GetAreas(
+        [FromQuery, StringLength(100)] string? search, CancellationToken cancellationToken,
+        [FromQuery] bool hasWeatherLocation = false) =>
+        await posts.GetAreasAsync(search, hasWeatherLocation, cancellationToken);
 
     [HttpGet("{id:long}/posts")]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]

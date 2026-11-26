@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using FloodAI.DataAccess;
 using FloodAI.DataAccess.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -6,11 +8,45 @@ namespace FloodAI.Business.Community;
 
 public sealed class CommunityPostService(FloodAiDbContext dbContext)
 {
-    public Task<List<CommunityArea>> GetAreasAsync(CancellationToken cancellationToken) =>
-        dbContext.Areas.AsNoTracking().Where(area => area.IsActive)
+    public async Task<List<CommunityArea>> GetAreasAsync(
+        string? search, bool hasWeatherLocation, CancellationToken cancellationToken)
+    {
+        var areas = await dbContext.Areas.AsNoTracking()
+            .Where(area => area.IsActive && (!hasWeatherLocation ||
+                (area.WeatherLatitude != null && area.WeatherLongitude != null)))
             .OrderBy(area => area.Name).ThenBy(area => area.Id)
-            .Select(area => new CommunityArea(area.Id, area.ParentId, area.Code, area.Name, area.Level))
+            .Select(area => new CommunityArea(area.Id, area.ParentId, area.Code, area.Name, area.Level,
+                area.WeatherLatitude, area.WeatherLongitude))
             .ToListAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return areas;
+        }
+
+        var term = NormalizeAreaSearch(search);
+        return areas.FindAll(area => NormalizeAreaSearch(area.Name).Contains(term, StringComparison.Ordinal) ||
+            NormalizeAreaSearch(area.Code).Contains(term, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeAreaSearch(string text)
+    {
+        var normalized = new StringBuilder(text.Length);
+        foreach (var character in text.ToLowerInvariant().Normalize(NormalizationForm.FormD))
+        {
+            if (char.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            {
+                normalized.Append(character switch
+                {
+                    'đ' => 'd',
+                    '_' or '-' => ' ',
+                    _ => character
+                });
+            }
+        }
+
+        return string.Join(' ', normalized.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+    }
 
     public async Task<CommunityPage<CommunityPostView>?> GetFeedAsync(
         long areaId, string? type, DateTimeOffset? from, DateTimeOffset? to,

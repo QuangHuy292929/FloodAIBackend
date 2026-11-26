@@ -6,7 +6,8 @@ public sealed record CatalogBasin(
     long Id, string Code, string Name, string? Description, bool IsActive);
 
 public sealed record CatalogArea(
-    long Id, long? ParentId, string Code, string Name, string Level, bool IsActive);
+    long Id, long? ParentId, string Code, string Name, string Level, bool IsActive,
+    double? WeatherLatitude, double? WeatherLongitude);
 
 public sealed record CatalogStation(
     long Id, long BasinId, long AreaId, string Code, string Name, string Type, double? Latitude, double? Longitude);

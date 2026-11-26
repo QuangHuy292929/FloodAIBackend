@@ -36,7 +36,8 @@ public sealed class AdminHydrologyCatalogService(FloodAiDbContext dbContext)
 
     public Task<List<CatalogArea>> GetAreasAsync(CancellationToken cancellationToken) =>
         dbContext.Areas.AsNoTracking().OrderBy(area => area.Id)
-            .Select(area => new CatalogArea(area.Id, area.ParentId, area.Code, area.Name, area.Level, area.IsActive))
+            .Select(area => new CatalogArea(area.Id, area.ParentId, area.Code, area.Name, area.Level,
+                area.IsActive, area.WeatherLatitude, area.WeatherLongitude))
             .ToListAsync(cancellationToken);
 
     public async Task<CatalogArea> SaveAreaAsync(long adminId, long? id, AreaInput input,
@@ -70,8 +71,29 @@ public sealed class AdminHydrologyCatalogService(FloodAiDbContext dbContext)
         }
         await SaveAsync(adminId, id, "AREA", area.Code, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return new CatalogArea(area.Id, area.ParentId, area.Code, area.Name, area.Level, area.IsActive);
+        return ToCatalogArea(area);
     }
+
+    public async Task<CatalogArea> SetWeatherLocationAsync(long adminId, long id, double? latitude,
+        double? longitude, CancellationToken cancellationToken)
+    {
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            throw new CatalogException(CatalogError.Invalid, "Provide both coordinates or set both to null.");
+        }
+
+        var area = await dbContext.Areas.FindAsync([id], cancellationToken) ??
+                   throw new CatalogException(CatalogError.NotFound, "Area not found.");
+        area.WeatherLatitude = latitude;
+        area.WeatherLongitude = longitude;
+        CatalogAudit.Record(dbContext, adminId, "UPDATE_WEATHER_LOCATION", "AREA", area.Code);
+        await CatalogAudit.SaveAsync(dbContext, cancellationToken);
+        return ToCatalogArea(area);
+    }
+
+    private static CatalogArea ToCatalogArea(Area area) =>
+        new(area.Id, area.ParentId, area.Code, area.Name, area.Level, area.IsActive,
+            area.WeatherLatitude, area.WeatherLongitude);
 
     public Task<List<CatalogStation>> GetStationsAsync(CancellationToken cancellationToken) =>
         dbContext.Stations.AsNoTracking().OrderBy(station => station.Id)

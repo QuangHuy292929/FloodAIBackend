@@ -24,7 +24,7 @@ Lỗi thường theo `ProblemDetails` với `status`, `title`, `detail` nếu c�
 
 ## Thời tiết hiện tại
 
-`GET /api/v1/weather/current?areaId=1` công khai và trả `200` cho khu vực hoạt động có tọa độ. Lấy ID từ `GET /api/v1/areas?hasWeatherLocation=true`. Thiếu hoặc sai `areaId` trả `400`. Khu vực không tồn tại hoặc bị tắt trả `404`. Khu vực chưa có tọa độ trả `422`. Khi Open-Meteo lỗi, quá thời gian chờ hoặc không trả được dữ liệu hợp lệ, API trả `503`.
+`GET /api/v1/weather/current?areaId=1` công khai và trả `200` cho khu vực hoạt động có tọa độ. Lấy ID từ `GET /api/v1/areas?hasWeatherLocation=true`. Thiếu hoặc sai `areaId` trả `400`. Khu vực không tồn tại hoặc bị tắt trả `404`. Khu vực chưa có tọa độ trả `422`. Khi Open-Meteo lỗi, quá thời gian chờ hoặc không trả được dữ liệu hợp lệ, API dùng bản cache còn trong giới hạn. Nếu hết bản phù hợp, API trả `503`.
 
 Ví dụ phản hồi cho Hải Phòng.
 
@@ -48,7 +48,8 @@ Ví dụ phản hồi cho Hải Phòng.
   "windSpeedKmh": 3.1,
   "windDirectionDegrees": 62,
   "weatherCode": 2,
-  "isDay": false
+  "isDay": false,
+  "isStale": false
 }
 ```
 
@@ -62,7 +63,7 @@ Ví dụ phản hồi cho Hải Phòng.
 
 | Phần phản hồi | Trường |
 | --- | --- |
-| Thông tin khu vực và nguồn | `areaId, areaName, latitude, longitude, source, sourceUrl, dataOrigin, timeZone, fetchedAt` |
+| Thông tin khu vực và nguồn | `areaId, areaName, latitude, longitude, source, sourceUrl, dataOrigin, timeZone, fetchedAt, isStale` |
 | `hourly` | 168 mốc gồm `validAt, temperatureC, relativeHumidityPercent, precipitationMm, precipitationProbabilityPercent, windSpeedKmh, weatherCode` |
 | `daily` | 7 ngày gồm `date, minTemperatureC, maxTemperatureC, precipitationMm, maxPrecipitationProbabilityPercent, weatherCode` |
 
@@ -83,6 +84,12 @@ Ví dụ một phần tử của `hourly`.
   "weatherCode": 2
 }
 ```
+
+### Trạng thái cache của hai API Weather
+
+Phản hồi `200` của cả hai API luôn có `isStale`. Giá trị `false` gồm dữ liệu vừa tải hoặc bản cache còn thời hạn sử dụng bình thường. Giá trị `true` báo backend đã dùng bản cũ vì lần tải mới thất bại và bản cũ còn trong giới hạn tuổi. Khi đó, hiện **Dữ liệu cập nhật lần cuối** cùng `fetchedAt` gốc. Trạng thái này độc lập với `validAt` của nhà cung cấp.
+
+Dự báo chỉ dùng bản cache khớp với ngày hiện tại ở Việt Nam. Khi tọa độ khu vực đổi, backend dùng tọa độ mới để tra cache. Nếu trả `503`, hiển thị trạng thái tạm thời không lấy được thời tiết và cho phép người dùng thử lại sau. Backend chờ theo `Weather:Cache:RetryAfterFailure` giữa các lần thử lại cho cùng mục cache.
 
 ## Danh mục, quan trắc và dự báo
 

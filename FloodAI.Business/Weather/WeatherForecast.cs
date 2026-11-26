@@ -4,7 +4,7 @@ public sealed record WeatherForecast(
     long AreaId, string AreaName, double Latitude, double Longitude,
     string Source, string SourceUrl, string DataOrigin, string TimeZone,
     DateTimeOffset FetchedAt, IReadOnlyList<HourlyWeatherForecast> Hourly,
-    IReadOnlyList<DailyWeatherForecast> Daily);
+    IReadOnlyList<DailyWeatherForecast> Daily, bool IsStale = false);
 
 public sealed record HourlyWeatherForecast(
     DateTimeOffset ValidAt, double? TemperatureC, double? RelativeHumidityPercent,

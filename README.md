@@ -68,6 +68,20 @@ Gọi `GET /api/v1/weather/forecast?areaId=1` để lấy 168 mốc theo giờ v
 
 Máy chạy backend cần kết nối HTTPS đến `api.open-meteo.com`. Cấu hình `Weather__BaseUrl` nếu cần trỏ đến một nguồn mô phỏng hợp đồng Open-Meteo trong kiểm thử. Khi trình bày dữ liệu, ghi nguồn Open-Meteo và nêu rõ dữ liệu đã được chuẩn hóa nếu có thay đổi khi hiển thị. [Tài liệu Open-Meteo](https://open-meteo.com/en/docs) · [Điều khoản và ghi công](https://open-meteo.com/en/pricing#faq)
 
+### Cache thời tiết
+
+Backend dùng `IMemoryCache` trong tiến trình .NET. Hai API dùng cache riêng theo khu vực và tọa độ đại diện. Khi nhiều request cùng cần làm mới một mục, chúng dùng chung kết quả của lần tải đó. Sau khi khởi động lại ứng dụng, cache sẽ được tạo lại theo nhu cầu. [Tài liệu IMemoryCache](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-10.0)
+
+| Cấu hình dưới `Weather:Cache` | Mặc định |
+| --- | --- |
+| `CurrentFreshFor` | 15 phút |
+| `CurrentMaxAge` | 1 giờ tuổi tối đa của bản thời tiết hiện tại |
+| `ForecastFreshFor` | 1 giờ |
+| `ForecastMaxAge` | 6 giờ tuổi tối đa, trong cùng ngày theo giờ Việt Nam |
+| `RetryAfterFailure` | 1 phút trước khi thử lại nhà cung cấp |
+
+Các mốc tuổi được tính từ lúc backend tải dữ liệu thành công. Đặt giá trị theo định dạng `hh:mm:ss` trong appsettings hoặc dùng biến môi trường, ví dụ `Weather__Cache__CurrentFreshFor=00:15:00`. API đánh dấu bản dùng lại sau lỗi bằng `isStale: true` và giữ `fetchedAt` gốc. Khi hết bản phù hợp, API trả `503`.
+
 ## Quan trắc Văn Úc
 
 - `GET /api/v1/stations/{id}/metrics` liệt kê các đại lượng có dữ liệu tại trạm. Đơn vị chưa xác minh có giá trị `null`.

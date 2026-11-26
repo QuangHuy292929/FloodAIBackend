@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://127.0.0.1:4840/"
+      "url": "http://127.0.0.1:3763/"
     }
   ],
   "paths": {
@@ -5586,6 +5586,10 @@
               "null",
               "boolean"
             ]
+          },
+          "isStale": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -6817,6 +6821,10 @@
             "items": {
               "$ref": "#/components/schemas/DailyWeatherForecast"
             }
+          },
+          "isStale": {
+            "type": "boolean",
+            "default": false
           }
         }
       }

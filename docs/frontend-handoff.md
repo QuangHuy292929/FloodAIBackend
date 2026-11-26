@@ -67,6 +67,8 @@ Sau khi chọn khu vực, gọi `GET /api/v1/weather/current?areaId=1` để l�
 
 Gọi tiếp `GET /api/v1/weather/forecast?areaId=1` để lấy `hourly` cho biểu đồ theo giờ và `daily` cho danh sách 7 ngày. Dùng `validAt` làm mốc giờ và giữ `daily.date` theo lịch Việt Nam. Chuỗi theo giờ bắt đầu từ nửa đêm hôm nay. Nếu cần, lọc các mốc đã qua ở giao diện.
 
+Khi `isStale` là `true`, hiển thị dữ liệu cùng nhãn **Cập nhật lần cuối** và giờ từ `fetchedAt`. Khi nhận `503`, hiển thị thông báo thời tiết tạm thời không khả dụng và cho người dùng thử lại sau.
+
 ## Thử luồng dự báo Văn Úc
 
 Dữ liệu demo trên Supabase có lưu vực Văn Úc `1`, khu vực Hải Phòng `1`, trạm Trung Trang `1` và Hòn Dấu `2`. Dùng danh mục API để lấy ID trong từng môi trường.

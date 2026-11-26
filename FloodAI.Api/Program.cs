@@ -65,6 +65,13 @@ builder.Services.AddHttpClient<ForecastInferenceClient>(client =>
     client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddOptions<WeatherCacheOptions>()
+    .BindConfiguration("Weather:Cache")
+    .Validate(options => options.IsValid(), "Weather cache durations are out of range or fresh time exceeds max age.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<WeatherCache>();
 builder.Services.AddScoped<WeatherService>();
 builder.Services.AddHttpClient<OpenMeteoClient>(client =>
 {

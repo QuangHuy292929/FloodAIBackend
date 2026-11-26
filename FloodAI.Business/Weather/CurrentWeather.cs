@@ -6,4 +6,4 @@ public sealed record CurrentWeather(
     DateTimeOffset ValidAt, DateTimeOffset FetchedAt, int IntervalSeconds,
     double? TemperatureC, double? ApparentTemperatureC, double? RelativeHumidityPercent,
     double? PrecipitationMm, double? WindSpeedKmh, double? WindDirectionDegrees,
-    int? WeatherCode, bool? IsDay);
+    int? WeatherCode, bool? IsDay, bool IsStale = false);

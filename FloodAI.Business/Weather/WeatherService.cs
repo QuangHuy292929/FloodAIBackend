@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FloodAI.Business.Weather;
 
-public sealed class WeatherService(FloodAiDbContext dbContext, OpenMeteoClient provider)
+public sealed class WeatherService(
+    FloodAiDbContext dbContext, OpenMeteoClient provider, WeatherCache cache, TimeProvider clock)
 {
     private const string Source = "Open-Meteo";
     private const string SourceUrl = "https://open-meteo.com/";
@@ -12,20 +13,28 @@ public sealed class WeatherService(FloodAiDbContext dbContext, OpenMeteoClient p
     public async Task<CurrentWeather> GetCurrentAsync(long areaId, CancellationToken cancellationToken)
     {
         var (name, latitude, longitude) = await GetLocationAsync(areaId, cancellationToken);
-        var snapshot = await provider.ReadCurrentAsync(latitude, longitude, cancellationToken);
-        return new CurrentWeather(areaId, name, latitude, longitude, Source, SourceUrl,
-            DataOrigin, OpenMeteoClient.TimeZone, DateTimeOffset.FromUnixTimeSeconds(snapshot.Time),
-            DateTimeOffset.UtcNow, snapshot.Interval, snapshot.Temperature, snapshot.ApparentTemperature,
-            snapshot.RelativeHumidity, snapshot.Precipitation, snapshot.WindSpeed, snapshot.WindDirection,
-            snapshot.WeatherCode, snapshot.IsDay is int day ? day == 1 : null);
+        var (value, isStale) = await cache.GetCurrentAsync(areaId, latitude, longitude, async token =>
+        {
+            var snapshot = await provider.ReadCurrentAsync(latitude, longitude, token);
+            return new CurrentWeather(areaId, name, latitude, longitude, Source, SourceUrl,
+                DataOrigin, OpenMeteoClient.TimeZone, DateTimeOffset.FromUnixTimeSeconds(snapshot.Time),
+                clock.GetUtcNow(), snapshot.Interval, snapshot.Temperature, snapshot.ApparentTemperature,
+                snapshot.RelativeHumidity, snapshot.Precipitation, snapshot.WindSpeed, snapshot.WindDirection,
+                snapshot.WeatherCode, snapshot.IsDay is int day ? day == 1 : null);
+        }, cancellationToken);
+        return value with { AreaName = name, IsStale = isStale };
     }
 
     public async Task<WeatherForecast> GetForecastAsync(long areaId, CancellationToken cancellationToken)
     {
         var (name, latitude, longitude) = await GetLocationAsync(areaId, cancellationToken);
-        var (hourly, daily) = await provider.ReadForecastAsync(latitude, longitude, cancellationToken);
-        return new WeatherForecast(areaId, name, latitude, longitude, Source, SourceUrl, DataOrigin,
-            OpenMeteoClient.TimeZone, DateTimeOffset.UtcNow, hourly, daily);
+        var (value, isStale) = await cache.GetForecastAsync(areaId, latitude, longitude, async token =>
+        {
+            var (hourly, daily) = await provider.ReadForecastAsync(latitude, longitude, token);
+            return new WeatherForecast(areaId, name, latitude, longitude, Source, SourceUrl, DataOrigin,
+                OpenMeteoClient.TimeZone, clock.GetUtcNow(), hourly, daily);
+        }, cancellationToken);
+        return value with { AreaName = name, IsStale = isStale };
     }
 
     private async Task<(string Name, double Latitude, double Longitude)> GetLocationAsync(

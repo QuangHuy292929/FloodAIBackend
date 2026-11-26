@@ -10,7 +10,7 @@ public sealed class OpenMeteoClient(HttpClient httpClient)
     internal const string TimeZone = "Asia/Ho_Chi_Minh";
     private const int ForecastDays = 7;
     private const int ForecastHours = ForecastDays * 24;
-    private const int VietnamUtcOffsetSeconds = 7 * 60 * 60;
+    internal const int VietnamUtcOffsetSeconds = 7 * 60 * 60;
     private const string CurrentVariables = "temperature_2m,apparent_temperature,relative_humidity_2m," +
         "precipitation,wind_speed_10m,wind_direction_10m,weather_code,is_day";
     private const string HourlyVariables = "temperature_2m,relative_humidity_2m,precipitation," +

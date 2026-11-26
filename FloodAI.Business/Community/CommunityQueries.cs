@@ -10,6 +10,8 @@ public static class CommunityRules
     public const string Approved = "APPROVED";
     public const string Rejected = "REJECTED";
     public const string Hidden = "HIDDEN";
+    public const string ReportResolved = "RESOLVED";
+    public const string ReportDismissed = "DISMISSED";
     public const int MaxImagesPerPost = 5;
 
     internal const string RejectionAction = "REJECT";

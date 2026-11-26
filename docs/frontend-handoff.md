@@ -106,7 +106,8 @@ Với giờ thử trên và bộ `backtest-2022-h2`, dự báo dự kiến lần
 
 - Đăng ký rồi đăng nhập. Lấy `user.role` để quyết định hiển thị các chức năng quản trị. API tự kiểm tra quyền cho mỗi request.
 - Tạo bài với khu vực Hải Phòng, kiểm tra trạng thái `PENDING` ở **Bài của tôi**, rồi dùng tài khoản ADMIN để duyệt.
-- Sau khi bài xuất bản, thử bình luận, gửi báo cáo và theo dõi khu vực. Xác nhận bài xuất hiện trong **Bảng tin theo dõi**.
+- Sau khi bài xuất bản, thử bình luận, gửi báo cáo và theo dõi khu vực. Xác nhận bình luận hiển thị ngay và bài xuất hiện trong **Bảng tin theo dõi**.
+- Với màn hình Admin, tải hàng đợi báo cáo, gửi quyết định cùng lý do và mở lịch sử để kiểm tra người xử lý, thời điểm và lý do.
 - Khi thử quên mật khẩu, xác nhận SMTP đã được cấu hình. Luồng dùng mã đặt lại đã qua kiểm thử tích hợp. Gửi email qua SMTP thật còn cần kiểm tra.
 
 Các request mẫu định dạng HTTP có sẵn trong [FloodAI.Api.http](../FloodAI.Api/FloodAI.Api.http).

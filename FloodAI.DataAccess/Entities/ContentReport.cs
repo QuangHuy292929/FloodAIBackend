@@ -9,6 +9,8 @@ public sealed class ContentReport
     public required string Reason { get; set; }
     public required string Status { get; set; }
     public long? ResolvedById { get; set; }
+    public DateTimeOffset? ResolvedAt { get; set; }
+    public string? ResolutionReason { get; set; }
 
     public User Reporter { get; set; } = null!;
     public CommunityPost? Post { get; set; }

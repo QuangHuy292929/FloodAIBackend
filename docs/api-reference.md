@@ -205,10 +205,22 @@ Tất cả endpoint cần ADMIN.
 | `POST /admin/posts/{id}/{decision}` | `204` sau khi xử lý. `decision` gồm `approve, reject, hide`. |
 | `POST /admin/comments/{id}/{decision}` | `204` sau khi xử lý. Cùng quy tắc như quyết định cho bài. |
 | `GET /admin/content-reports` | `200` danh sách báo cáo chờ, có `pendingReporterCount` để hiển thị số người báo cáo khác nhau. |
-| `POST /admin/content-reports/{id}/resolve` | `{ resolution: "RESOLVED" }` hoặc `"DISMISSED"` → `204`. |
+| `POST /admin/content-reports/{id}/resolve` | `{ resolution, reason }` → `204`. Nhận `RESOLVED` hoặc `DISMISSED`. |
+| `GET /admin/content-reports/history` | `200` trang báo cáo đã xử lý, mới nhất trước. Lọc `reportId`, `resolution` và một trong hai tham số `postId`, `commentId`. |
 | `GET /admin/moderation/history` | `200` trang nhật ký có `adminId, postId, commentId, action, reason, createdAt`. |
 
 `reject` và `hide` cần body `{ reason }`, `approve` có thể gửi body rỗng. Các danh sách nhận `page, pageSize`. Báo cáo và nhật ký nhận tối đa một bộ lọc trong `postId, commentId`. Việc gửi hoặc xử lý báo cáo không tự ẩn nội dung. Admin dùng quyết định `hide` khi cần.
+
+Khi xử lý báo cáo, `reason` là lý do của Admin, bắt buộc và tối đa 1.000 ký tự. Yêu cầu dùng ID báo cáo trong hàng đợi. Báo cáo đã xử lý trả `409` nếu gửi lại quyết định. Ví dụ body.
+
+```json
+{
+  "resolution": "DISMISSED",
+  "reason": "Đã kiểm tra nội dung và không thấy vi phạm."
+}
+```
+
+Lịch sử gồm `id, reporterId, postId, commentId, parentPostId, reportReason, resolution, resolutionReason, resolvedById, resolvedAt`. `reportReason` là lý do của người báo cáo. `resolutionReason` và `resolvedAt` có thể là `null` với báo cáo đã xử lý từ trước khi có migration. Dùng `resolvedAt` để hiển thị thời điểm xử lý. Các bản ghi chưa biết thời điểm được xếp sau các bản ghi có thời điểm.
 
 ## Quản trị danh mục
 

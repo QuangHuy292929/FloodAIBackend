@@ -99,14 +99,34 @@ public sealed class CommunityModerationService(FloodAiDbContext dbContext)
             .PageAsync(page, pageSize, cancellationToken);
     }
 
+    public Task<CommunityPage<ModerationReportHistoryItem>> GetReportHistoryAsync(
+        long? reportId, long? postId, long? commentId, string? resolution, int page, int pageSize,
+        CancellationToken cancellationToken) =>
+        dbContext.ContentReports.AsNoTracking()
+            .Where(report => (report.Status == CommunityRules.ReportResolved ||
+                report.Status == CommunityRules.ReportDismissed) &&
+                (reportId == null || report.Id == reportId) &&
+                (postId == null || report.PostId == postId) &&
+                (commentId == null || report.CommentId == commentId) &&
+                (resolution == null || report.Status == resolution))
+            .OrderByDescending(report => report.ResolvedAt.HasValue)
+            .ThenByDescending(report => report.ResolvedAt).ThenByDescending(report => report.Id)
+            .Select(report => new ModerationReportHistoryItem(
+                report.Id, report.ReporterId, report.PostId, report.CommentId,
+                report.PostId ?? report.Comment!.PostId, report.Reason, report.Status,
+                report.ResolutionReason, report.ResolvedById, report.ResolvedAt))
+            .PageAsync(page, pageSize, cancellationToken);
+
     public async Task<ModerationResult> ResolveReportAsync(
-        long adminId, long id, bool dismissed, CancellationToken cancellationToken)
+        long adminId, long id, string resolution, string reason, CancellationToken cancellationToken)
     {
-        var status = dismissed ? "DISMISSED" : "RESOLVED";
+        var resolvedAt = DateTimeOffset.UtcNow;
         var changed = await dbContext.ContentReports.Where(report => report.Id == id &&
                 report.Status == CommunityRules.Pending)
-            .ExecuteUpdateAsync(updates => updates.SetProperty(report => report.Status, status)
-                .SetProperty(report => report.ResolvedById, adminId), cancellationToken);
+            .ExecuteUpdateAsync(updates => updates.SetProperty(report => report.Status, resolution)
+                .SetProperty(report => report.ResolvedById, adminId)
+                .SetProperty(report => report.ResolvedAt, resolvedAt)
+                .SetProperty(report => report.ResolutionReason, reason), cancellationToken);
         if (changed == 1)
         {
             return ModerationResult.Applied;

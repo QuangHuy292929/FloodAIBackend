@@ -11,6 +11,10 @@ internal sealed class ContentReportConfiguration : IEntityTypeConfiguration<Cont
         builder.ToTable("content_reports", table =>
         {
             table.HasCheckConstraint("ck_content_reports_single_target", "(post_id IS NOT NULL) <> (comment_id IS NOT NULL)");
+            table.HasCheckConstraint("ck_content_reports_resolution_details",
+                "(resolved_at IS NULL AND resolution_reason IS NULL) OR " +
+                "(resolved_at IS NOT NULL AND resolution_reason IS NOT NULL AND btrim(resolution_reason) <> '' " +
+                "AND resolved_by IS NOT NULL AND status IN ('RESOLVED', 'DISMISSED'))");
         });
 
         builder.Property(report => report.Id).HasColumnName("id");
@@ -20,6 +24,8 @@ internal sealed class ContentReportConfiguration : IEntityTypeConfiguration<Cont
         builder.Property(report => report.Reason).HasColumnName("reason");
         builder.Property(report => report.Status).HasColumnName("status");
         builder.Property(report => report.ResolvedById).HasColumnName("resolved_by");
+        builder.Property(report => report.ResolvedAt).HasColumnName("resolved_at");
+        builder.Property(report => report.ResolutionReason).HasColumnName("resolution_reason").HasMaxLength(1000);
 
         builder.HasOne(report => report.Reporter)
             .WithMany()

@@ -24,3 +24,7 @@ public sealed record ModerationHistoryItem(
 public sealed record ModerationReportItem(
     long Id, long ReporterId, long? PostId, long? CommentId, long ParentPostId,
     string Content, string ContentStatus, bool ContentDeleted, string Reason, int PendingReporterCount);
+
+public sealed record ModerationReportHistoryItem(
+    long Id, long ReporterId, long? PostId, long? CommentId, long ParentPostId,
+    string ReportReason, string Resolution, string? ResolutionReason, long? ResolvedById, DateTimeOffset? ResolvedAt);

@@ -182,10 +182,11 @@ Bình luận được công khai ngay khi gửi vào bài đã xuất bản. Gi�
 | `POST /api/v1/admin/posts/{id}/{decision}` | Duyệt, từ chối hoặc ẩn bài. |
 | `POST /api/v1/admin/comments/{id}/{decision}` | Duyệt, từ chối hoặc ẩn bình luận. |
 | `GET /api/v1/admin/content-reports` | Báo cáo chờ xử lý, ưu tiên nội dung có nhiều người báo cáo. Có thể lọc `postId` hoặc `commentId`. |
-| `POST /api/v1/admin/content-reports/{id}/resolve` | Gửi `{"resolution":"RESOLVED"}` hoặc `{"resolution":"DISMISSED"}`. |
+| `POST /api/v1/admin/content-reports/{id}/resolve` | Gửi `resolution` (`RESOLVED` hoặc `DISMISSED`) và `reason` (lý do xử lý). |
+| `GET /api/v1/admin/content-reports/history` | Lịch sử báo cáo đã xử lý. Lọc theo `reportId`, `resolution` và một trong hai tham số `postId`, `commentId`. |
 | `GET /api/v1/admin/moderation/history` | Nhật ký quyết định, có thể lọc `postId` hoặc `commentId`. |
 
-Dùng `approve`, `reject` hoặc `hide` cho `decision`. `reject` và `hide` cần JSON chứa `reason`. Báo cáo chỉ tạo việc cần xem xét. Admin quyết định ẩn dựa trên nội dung và lý do vi phạm.
+Dùng `approve`, `reject` hoặc `hide` cho `decision`. `reject` và `hide` cần JSON chứa `reason`. Báo cáo chỉ tạo việc cần xem xét. Admin quyết định ẩn dựa trên nội dung và lý do vi phạm. Áp dụng migration `AddContentReportResolutionDetails` trước khi dùng luồng báo cáo với bản backend này.
 
 ## Theo dõi cá nhân
 

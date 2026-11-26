@@ -16,15 +16,26 @@ namespace FloodAI.Api.Controllers;
 public sealed class AdminModerationController(CommunityModerationService moderation) : ControllerBase
 {
     public sealed record DecisionRequest([StringLength(1000)] string? Reason);
-    public sealed record ResolveRequest([Required, StringLength(16)] string? Resolution);
+    public sealed record ResolveRequest(
+        [Required, StringLength(16)] string Resolution,
+        [Required, StringLength(1000)] string Reason);
 
-    public sealed class TargetQuery : CommunityPageQuery
+    public class TargetQuery : CommunityPageQuery
     {
         [Range(typeof(long), "1", "9223372036854775807")]
         public long? PostId { get; init; }
 
         [Range(typeof(long), "1", "9223372036854775807")]
         public long? CommentId { get; init; }
+    }
+
+    public sealed class ReportHistoryQuery : TargetQuery
+    {
+        [Range(typeof(long), "1", "9223372036854775807")]
+        public long? ReportId { get; init; }
+
+        [StringLength(16)]
+        public string? Resolution { get; init; }
     }
 
     [HttpGet("moderation/queue")]
@@ -78,19 +89,47 @@ public sealed class AdminModerationController(CommunityModerationService moderat
             cancellationToken);
     }
 
+    [HttpGet("content-reports/history")]
+    public async Task<ActionResult<CommunityPage<ModerationReportHistoryItem>>> GetReportHistory(
+        [FromQuery] ReportHistoryQuery query, CancellationToken cancellationToken)
+    {
+        var resolution = query.Resolution is null ? null : ParseResolution(query.Resolution);
+        if (!TargetIsValid(query) || !ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        return await moderation.GetReportHistoryAsync(query.ReportId, query.PostId, query.CommentId, resolution,
+            query.Page, query.PageSize, cancellationToken);
+    }
+
     [HttpPost("content-reports/{id:long}/resolve")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ResolveReport(long id, ResolveRequest request, CancellationToken cancellationToken)
     {
-        var status = request.Resolution?.Trim().ToUpperInvariant();
-        if (status is not ("RESOLVED" or "DISMISSED"))
+        var resolution = ParseResolution(request.Resolution);
+        if (resolution is null)
         {
-            ModelState.AddModelError("resolution", "Use RESOLVED or DISMISSED.");
             return ValidationProblem(ModelState);
         }
 
         return ToResponse(await moderation.ResolveReportAsync(AccountBearerHandler.GetUserId(User), id,
-            status == "DISMISSED", cancellationToken));
+            resolution, request.Reason.Trim(), cancellationToken));
+    }
+
+    private string? ParseResolution(string value)
+    {
+        var resolution = value.Trim().ToUpperInvariant();
+        if (resolution is CommunityRules.ReportResolved or CommunityRules.ReportDismissed)
+        {
+            return resolution;
+        }
+
+        ModelState.AddModelError("resolution", "Use RESOLVED or DISMISSED.");
+        return null;
     }
 
     private async Task<IActionResult> DecideAsync(

@@ -9,4 +9,5 @@ public sealed class Basin
     public bool IsActive { get; set; } = true;
 
     public ICollection<Station> Stations { get; } = new List<Station>();
+    public ICollection<RiverBranch> RiverBranches { get; } = new List<RiverBranch>();
 }

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using FloodAI.Api.Authentication;
 using FloodAI.Business.Accounts;
+using FloodAI.Business.Catalog;
 using FloodAI.Business.Catalog.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +50,26 @@ public sealed class AdminCatalogController(AdminHydrologyCatalogService hydrolog
     public Task<CatalogArea> SetWeatherLocation(long id, AreaWeatherLocationInput input,
         CancellationToken cancellationToken) =>
         hydrology.SetWeatherLocationAsync(AdminId, id, input.Latitude, input.Longitude, cancellationToken);
+
+    [HttpGet("branches")]
+    public Task<List<RiverBranchSummary>> GetBranches(CancellationToken cancellationToken) =>
+        hydrology.GetBranchesAsync(cancellationToken);
+
+    [HttpPost("branches")]
+    [ProducesResponseType<RiverBranchSummary>(StatusCodes.Status201Created)]
+    public async Task<ActionResult<RiverBranchSummary>> CreateBranch(RiverBranchInput input,
+        CancellationToken cancellationToken) =>
+        StatusCode(StatusCodes.Status201Created,
+            await hydrology.SaveBranchAsync(AdminId, null, input, cancellationToken));
+
+    [HttpPut("branches/{id:long}")]
+    public Task<RiverBranchSummary> UpdateBranch(long id, RiverBranchInput input, CancellationToken cancellationToken) =>
+        hydrology.SaveBranchAsync(AdminId, id, input, cancellationToken);
+
+    [HttpPut("stations/{id:long}/hydrology-links")]
+    public Task<CatalogStation> SetHydrologyLinks(long id, StationHydrologyLinksInput input,
+        CancellationToken cancellationToken) =>
+        hydrology.SetHydrologyLinksAsync(AdminId, id, input.RiverBranchId, input.UpdateSourceId, cancellationToken);
 
     [HttpGet("stations")]
     public Task<List<CatalogStation>> GetStations(CancellationToken cancellationToken) =>
@@ -118,6 +139,15 @@ public sealed class AdminCatalogController(AdminHydrologyCatalogService hydrolog
     public Task<CatalogPage<CatalogActionView>> GetActions(
         [FromQuery] CatalogPageQuery query, string? resourceType, CancellationToken cancellationToken) =>
         data.GetActionsAsync(resourceType, query.Page, query.PageSize, cancellationToken);
+}
+
+public sealed class StationHydrologyLinksInput
+{
+    [Range(typeof(long), "1", "9223372036854775807")]
+    public required long? RiverBranchId { get; init; }
+
+    [Range(typeof(long), "1", "9223372036854775807")]
+    public required long? UpdateSourceId { get; init; }
 }
 
 public sealed class AreaWeatherLocationInput

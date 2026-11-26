@@ -71,7 +71,7 @@ Khi `isStale` là `true`, hiển thị dữ liệu cùng nhãn **Cập nhật l�
 
 ## Thử luồng dự báo Văn Úc
 
-Dữ liệu demo trên Supabase có lưu vực Văn Úc `1`, khu vực Hải Phòng `1`, trạm Trung Trang `1` và Hòn Dấu `2`. Dùng danh mục API để lấy ID trong từng môi trường.
+Dữ liệu demo trên Supabase có lưu vực Văn Úc `1`, khu vực Hải Phòng `1`, trạm Trung Trang `1` và Hòn Dấu `2`. Dùng danh mục API để lấy ID trong từng môi trường. Có thể lấy nhánh sông trước khi chọn trạm. Dùng `dataOrigin` để chú thích thực đo và ước tính, đọc `unitStatus` trước khi hiển thị đơn vị và tách chuỗi theo nguồn nếu quy ước giờ khác nhau.
 
 1. Gọi `GET /api/v1/basins`, rồi `GET /api/v1/basins/{id}/stations`.
 2. Lấy danh sách đại lượng qua `GET /api/v1/stations/{id}/metrics`. Gọi `GET /api/v1/stations/{id}/observations` để vẽ thực đo.

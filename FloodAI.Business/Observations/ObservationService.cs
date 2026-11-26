@@ -14,13 +14,17 @@ public sealed class ObservationService(FloodAiDbContext dbContext)
             return null;
         }
 
-        return await dbContext.Metrics.AsNoTracking()
-            .Where(metric => dbContext.Observations.Any(observation =>
-                observation.StationId == stationId && observation.MetricId == metric.Id))
-            .OrderBy(metric => metric.Name)
-            .ThenBy(metric => metric.Code)
-            .Select(metric => new StationMetricSummary(metric.Code, metric.Name, metric.QuantityType, null))
+        var rows = await dbContext.Observations.AsNoTracking()
+            .Where(observation => observation.StationId == stationId &&
+                observation.DataOrigin != ObservationMetadata.Synthetic)
+            .Select(observation => new
+            {
+                observation.Metric.Code, observation.Metric.Name, observation.Metric.QuantityType, observation.Unit
+            }).Distinct().OrderBy(metric => metric.Name).ThenBy(metric => metric.Code)
             .ToListAsync(cancellationToken);
+        return rows.GroupBy(metric => new { metric.Code, metric.Name, metric.QuantityType })
+            .Select(group => new StationMetricSummary(group.Key.Code, group.Key.Name, group.Key.QuantityType,
+                group.Count() == 1 ? group.First().Unit : null)).ToList();
     }
 
     public async Task<ObservationPage?> GetObservationsAsync(
@@ -30,6 +34,8 @@ public sealed class ObservationService(FloodAiDbContext dbContext)
         DateTime to,
         int page,
         int pageSize,
+        long? sourceId,
+        string? dataOrigin,
         CancellationToken cancellationToken)
     {
         if (!await StationIsVisibleAsync(stationId, cancellationToken))
@@ -37,13 +43,18 @@ public sealed class ObservationService(FloodAiDbContext dbContext)
             return null;
         }
 
-        var observations = await dbContext.Observations.AsNoTracking()
-            .Where(observation =>
-                observation.StationId == stationId &&
-                observation.Metric.Code == metric &&
-                observation.TimestampLocal >= from &&
-                observation.TimestampLocal < to)
-            .OrderBy(observation => observation.TimestampLocal)
+        var query = dbContext.Observations.AsNoTracking().Where(observation =>
+            observation.StationId == stationId && observation.Metric.Code == metric &&
+            (sourceId == null || observation.SourceId == sourceId) &&
+            (dataOrigin == null ? observation.DataOrigin != ObservationMetadata.Synthetic :
+                observation.DataOrigin == dataOrigin) &&
+            observation.TimestampLocal >= from && observation.TimestampLocal < to);
+        var timeBases = await query.Select(observation => observation.Source.TimeBasis)
+            .Distinct().Take(2).ToListAsync(cancellationToken);
+        var timeBasis = timeBases.Count > 1 ? ObservationMetadata.PerSource :
+            timeBases.SingleOrDefault() ?? ObservationMetadata.SourceLocalUnverified;
+
+        var observations = await query.OrderBy(observation => observation.TimestampLocal)
             .ThenBy(observation => observation.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize + 1)
@@ -55,7 +66,13 @@ public sealed class ObservationService(FloodAiDbContext dbContext)
                 new ObservationSourceSummary(
                     observation.Source.Id,
                     observation.Source.Name,
-                    observation.Source.Url)))
+                    observation.Source.Url,
+                    observation.Source.SourceType,
+                    observation.Source.TimeBasis),
+                observation.DataOrigin,
+                observation.Unit,
+                observation.Unit == null ? ObservationMetadata.UnverifiedUnit : ObservationMetadata.VerifiedUnit,
+                observation.IngestedAt))
             .ToListAsync(cancellationToken);
 
         var hasNextPage = observations.Count > pageSize;
@@ -64,7 +81,7 @@ public sealed class ObservationService(FloodAiDbContext dbContext)
             observations.RemoveAt(pageSize);
         }
 
-        return new ObservationPage(metric, from, to, VanUcObservationDataset.TimeBasis,
+        return new ObservationPage(metric, from, to, timeBasis,
             page, pageSize, hasNextPage, observations);
     }
 

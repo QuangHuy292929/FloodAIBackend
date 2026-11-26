@@ -13,6 +13,12 @@ public sealed class ObservationQuery
     [Required]
     public string To { get; init; } = "";
 
+    [Range(typeof(long), "1", "9223372036854775807")]
+    public long? SourceId { get; init; }
+
+    [StringLength(32)]
+    public string? DataOrigin { get; init; }
+
     [Range(1, int.MaxValue)]
     public int Page { get; init; } = 1;
 

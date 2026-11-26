@@ -10,7 +10,8 @@ public sealed class AdminDataCatalogService(FloodAiDbContext dbContext)
 {
     public Task<List<CatalogDataSource>> GetSourcesAsync(CancellationToken cancellationToken) =>
         dbContext.DataSources.AsNoTracking().OrderBy(source => source.Id)
-            .Select(source => new CatalogDataSource(source.Id, source.Name, source.Url, source.SourceType, source.Status))
+            .Select(source => new CatalogDataSource(source.Id, source.Name, source.Url, source.SourceType, source.Status,
+                source.TimeBasis, source.SupportsUpdates))
             .ToListAsync(cancellationToken);
 
     public async Task<CatalogDataSource> SaveSourceAsync(long adminId, long? id, DataSourceInput input,
@@ -46,13 +47,28 @@ public sealed class AdminDataCatalogService(FloodAiDbContext dbContext)
             }
             dbContext.DataSources.Add(source);
         }
+        var timeBasis = input.TimeBasis?.Trim().ToUpperInvariant() ?? source.TimeBasis;
+        var supportsUpdates = input.SupportsUpdates ?? source.SupportsUpdates;
+        if (!ObservationMetadata.IsKnownTimeBasis(timeBasis) ||
+            (name == VanUcObservationDataset.SourceName && sourceType == VanUcObservationDataset.SourceType &&
+                timeBasis != VanUcObservationDataset.TimeBasis))
+        {
+            throw new CatalogException(CatalogError.Invalid, "The time basis is unsupported or would change the Văn Úc source clock.");
+        }
+        if (sourceType == VanUcObservationDataset.SourceType && supportsUpdates)
+        {
+            throw new CatalogException(CatalogError.Invalid, "Historical CSV is not an updating source.");
+        }
+        source.TimeBasis = timeBasis;
+        source.SupportsUpdates = supportsUpdates;
         source.Url = string.IsNullOrEmpty(url) ? null : url;
         source.Status = input.IsActive ? "ACTIVE" : "INACTIVE";
 
         await SaveAsync(adminId, id is null ? "CREATE" : "UPDATE", "DATA_SOURCE", $"{source.SourceType}:{source.Name}",
             cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return new CatalogDataSource(source.Id, source.Name, source.Url, source.SourceType, source.Status);
+        return new CatalogDataSource(source.Id, source.Name, source.Url, source.SourceType, source.Status,
+            source.TimeBasis, source.SupportsUpdates);
     }
 
     public Task<List<CatalogMetric>> GetMetricsAsync(CancellationToken cancellationToken) =>
@@ -105,7 +121,8 @@ public sealed class AdminDataCatalogService(FloodAiDbContext dbContext)
             .OrderByDescending(observation => observation.TimestampLocal).ThenByDescending(observation => observation.Id)
             .Select(observation => new CatalogObservation(observation.Id, observation.StationId, observation.MetricId,
                 observation.SourceId, observation.TimestampLocal, observation.ValueRaw, observation.QualityStatus,
-                observation.AvailableAt)), page, pageSize, cancellationToken);
+                observation.AvailableAt, observation.DataOrigin, observation.Unit, observation.IngestedAt)),
+            page, pageSize, cancellationToken);
     }
 
     public async Task<CatalogObservation> SetObservationMetadataAsync(
@@ -125,7 +142,7 @@ public sealed class AdminDataCatalogService(FloodAiDbContext dbContext)
             cancellationToken);
         return new CatalogObservation(observation.Id, observation.StationId, observation.MetricId,
             observation.SourceId, observation.TimestampLocal, observation.ValueRaw, observation.QualityStatus,
-            observation.AvailableAt);
+            observation.AvailableAt, observation.DataOrigin, observation.Unit, observation.IngestedAt);
     }
 
     public Task<CatalogPage<CatalogActionView>> GetActionsAsync(

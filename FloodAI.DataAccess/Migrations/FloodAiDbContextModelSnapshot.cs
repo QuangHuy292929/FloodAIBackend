@@ -308,13 +308,27 @@ namespace FloodAI.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<bool>("SupportsUpdates")
+                        .HasColumnType("boolean")
+                        .HasColumnName("supports_updates");
+
+                    b.Property<string>("TimeBasis")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("SOURCE_LOCAL_UNVERIFIED")
+                        .HasColumnName("time_basis");
+
                     b.Property<string>("Url")
                         .HasColumnType("text")
                         .HasColumnName("url");
 
                     b.HasKey("Id");
 
-                    b.ToTable("data_sources", (string)null);
+                    b.ToTable("data_sources", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_data_sources_time_basis", "time_basis IN ('SOURCE_LOCAL_UNVERIFIED', 'VIETNAM_LOCAL', 'UTC')");
+                        });
                 });
 
             modelBuilder.Entity("FloodAI.DataAccess.Entities.ForecastModel", b =>
@@ -540,6 +554,17 @@ namespace FloodAI.DataAccess.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("available_at");
 
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("UNCLASSIFIED")
+                        .HasColumnName("data_origin");
+
+                    b.Property<DateTimeOffset?>("IngestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ingested_at");
+
                     b.Property<long>("MetricId")
                         .HasColumnType("bigint")
                         .HasColumnName("metric_id");
@@ -561,6 +586,11 @@ namespace FloodAI.DataAccess.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("timestamp_local");
 
+                    b.Property<string>("Unit")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("unit");
+
                     b.Property<double>("ValueRaw")
                         .HasColumnType("double precision")
                         .HasColumnName("value_raw");
@@ -574,7 +604,10 @@ namespace FloodAI.DataAccess.Migrations
                     b.HasIndex("StationId", "MetricId", "SourceId", "TimestampLocal")
                         .IsUnique();
 
-                    b.ToTable("observations", (string)null);
+                    b.ToTable("observations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_observations_data_origin", "data_origin IN ('OBSERVED', 'ESTIMATED', 'SYNTHETIC', 'UNCLASSIFIED')");
+                        });
                 });
 
             modelBuilder.Entity("FloodAI.DataAccess.Entities.PostComment", b =>
@@ -666,6 +699,37 @@ namespace FloodAI.DataAccess.Migrations
                     b.ToTable("post_media", (string)null);
                 });
 
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.RiverBranch", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BasinId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("basin_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BasinId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("river_branches", (string)null);
+                });
+
             modelBuilder.Entity("FloodAI.DataAccess.Entities.Station", b =>
                 {
                     b.Property<long>("Id")
@@ -701,17 +765,29 @@ namespace FloodAI.DataAccess.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<long?>("RiverBranchId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("river_branch_id");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("type");
 
+                    b.Property<long?>("UpdateSourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("update_source_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AreaId");
 
+                    b.HasIndex("UpdateSourceId");
+
                     b.HasIndex("BasinId", "Code")
                         .IsUnique();
+
+                    b.HasIndex("BasinId", "RiverBranchId");
 
                     b.ToTable("stations", (string)null);
                 });
@@ -1127,6 +1203,17 @@ namespace FloodAI.DataAccess.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.RiverBranch", b =>
+                {
+                    b.HasOne("FloodAI.DataAccess.Entities.Basin", "Basin")
+                        .WithMany("RiverBranches")
+                        .HasForeignKey("BasinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Basin");
+                });
+
             modelBuilder.Entity("FloodAI.DataAccess.Entities.Station", b =>
                 {
                     b.HasOne("FloodAI.DataAccess.Entities.Area", "Area")
@@ -1141,9 +1228,24 @@ namespace FloodAI.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("FloodAI.DataAccess.Entities.DataSource", "UpdateSource")
+                        .WithMany()
+                        .HasForeignKey("UpdateSourceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FloodAI.DataAccess.Entities.RiverBranch", "RiverBranch")
+                        .WithMany("Stations")
+                        .HasForeignKey("BasinId", "RiverBranchId")
+                        .HasPrincipalKey("BasinId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Area");
 
                     b.Navigation("Basin");
+
+                    b.Navigation("RiverBranch");
+
+                    b.Navigation("UpdateSource");
                 });
 
             modelBuilder.Entity("FloodAI.DataAccess.Entities.StationThreshold", b =>
@@ -1234,6 +1336,8 @@ namespace FloodAI.DataAccess.Migrations
 
             modelBuilder.Entity("FloodAI.DataAccess.Entities.Basin", b =>
                 {
+                    b.Navigation("RiverBranches");
+
                     b.Navigation("Stations");
                 });
 
@@ -1247,6 +1351,11 @@ namespace FloodAI.DataAccess.Migrations
             modelBuilder.Entity("FloodAI.DataAccess.Entities.ForecastRun", b =>
                 {
                     b.Navigation("Values");
+                });
+
+            modelBuilder.Entity("FloodAI.DataAccess.Entities.RiverBranch", b =>
+                {
+                    b.Navigation("Stations");
                 });
 #pragma warning restore 612, 618
         }

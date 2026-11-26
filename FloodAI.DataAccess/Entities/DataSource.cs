@@ -1,3 +1,5 @@
+using FloodAI.DataAccess.Observations;
+
 namespace FloodAI.DataAccess.Entities;
 
 public sealed class DataSource
@@ -7,4 +9,6 @@ public sealed class DataSource
     public string? Url { get; set; }
     public required string SourceType { get; set; }
     public required string Status { get; set; }
+    public string TimeBasis { get; set; } = ObservationMetadata.SourceLocalUnverified;
+    public bool SupportsUpdates { get; set; }
 }

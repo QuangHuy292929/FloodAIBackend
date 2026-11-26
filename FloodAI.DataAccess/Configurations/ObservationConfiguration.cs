@@ -1,4 +1,5 @@
 using FloodAI.DataAccess.Entities;
+using FloodAI.DataAccess.Observations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,7 +9,8 @@ internal sealed class ObservationConfiguration : IEntityTypeConfiguration<Observ
 {
     public void Configure(EntityTypeBuilder<Observation> builder)
     {
-        builder.ToTable("observations");
+        builder.ToTable("observations", table => table.HasCheckConstraint("ck_observations_data_origin",
+            "data_origin IN ('OBSERVED', 'ESTIMATED', 'SYNTHETIC', 'UNCLASSIFIED')"));
 
         builder.Property(observation => observation.Id).HasColumnName("id");
         builder.Property(observation => observation.StationId).HasColumnName("station_id");
@@ -20,6 +22,10 @@ internal sealed class ObservationConfiguration : IEntityTypeConfiguration<Observ
         builder.Property(observation => observation.ValueRaw).HasColumnName("value_raw");
         builder.Property(observation => observation.QualityStatus).HasColumnName("quality_status");
         builder.Property(observation => observation.AvailableAt).HasColumnName("available_at");
+        builder.Property(observation => observation.DataOrigin).HasColumnName("data_origin")
+            .HasDefaultValue(ObservationMetadata.Unclassified);
+        builder.Property(observation => observation.Unit).HasColumnName("unit").HasMaxLength(32);
+        builder.Property(observation => observation.IngestedAt).HasColumnName("ingested_at");
 
         builder.HasIndex(observation => new
         {

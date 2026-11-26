@@ -98,16 +98,20 @@ Tất cả endpoint trong mục này công khai.
 | Endpoint | Kết quả |
 | --- | --- |
 | `GET /basins` | `200` mảng lưu vực hoạt động gồm `id, code, name, description`. |
-| `GET /basins/{id}/stations` | `200` mảng trạm gồm `id, code, name, type, latitude, longitude`. Tọa độ có thể là `null`. |
+| `GET /basins/{id}/branches` | `200` mảng nhánh sông `id, basinId, code, name` của lưu vực đang hoạt động. |
+| `GET /basins/{id}/stations` | `200` mảng trạm gồm `id, code, name, type, latitude, longitude, riverBranchId, updateSourceStatus`. Có thể lọc theo `branchId`. |
 | `GET /stations/{id}/metrics` | `200` mảng `code, name, quantityType, unit`. Đơn vị của bộ demo có thể là `null`. |
-| `GET /stations/{id}/observations` | `200` trang quan trắc. Gửi `metric, from, to` và tùy chọn `page, pageSize`. |
+| `GET /stations/{id}/observations` | `200` trang quan trắc. Gửi `metric, from, to` và tùy chọn `page, pageSize, sourceId, dataOrigin`. |
 | `GET /stations/{id}/models` | `200` mảng `version, horizonHours` của mô hình đang bật. Mảng rỗng nếu trạm chưa có mô hình hoạt động. |
 | `POST /forecasts/historical` | `200` lượt dự báo mới. Gửi `stationId, issueTimeLocal`. |
 
 Ví dụ quan trắc: `GET /api/v1/stations/1/observations?metric=water_level&from=2021-01-01&to=2021-01-02&pageSize=1`.
 
 - `from` bao gồm, `to` loại trừ. Dùng ngày ISO hoặc giờ ISO theo dữ liệu nguồn. Các mốc như `2021-01-01T08:00:00` đi dưới dạng chuỗi, giữ nguyên giá trị đồng hồ và bỏ qua chuyển đổi múi giờ của trình duyệt.
-- Mỗi phần tử quan trắc gồm `timestampLocal, valueRaw, qualityStatus, availableAt, source`. `source` gồm `id, name, url`. `availableAt` và `source.url` có thể là `null`. Quan trắc demo có `qualityStatus = SOURCE_UNVERIFIED`. Ví dụ điểm đầu của mực nước Trung Trang có `timestampLocal = 2021-01-01T00:00:00` và `valueRaw = -7`. Giữ dấu và giá trị gốc để vẽ.
+- Mỗi điểm gồm `timestampLocal, valueRaw, qualityStatus, availableAt, source, dataOrigin, unit, unitStatus, ingestedAt`. `source` gồm `id, name, url, sourceType, timeBasis`. Có thể lọc `dataOrigin` theo `OBSERVED` (thực đo), `ESTIMATED` (ước tính hoặc nội suy), `UNCLASSIFIED` (chưa phân loại) hoặc `SYNTHETIC` (mô phỏng, chỉ trả khi yêu cầu rõ). Mốc thiếu không tạo điểm giá trị 0.
+- `unitStatus=UNVERIFIED` khi `unit=null`. Đơn vị trong danh sách đại lượng chỉ được điền khi các điểm của đại lượng ở trạm có cùng đơn vị đã xác minh. `availableAt` và `ingestedAt` là thời điểm có offset nếu biết. Quan trắc Văn Úc có xuất xứ `OBSERVED`, trạng thái `SOURCE_UNVERIFIED`, giữ số và giờ nguồn.
+- `source.timeBasis` gồm `SOURCE_LOCAL_UNVERIFIED`, `VIETNAM_LOCAL` hoặc `UTC`. Khi truy vấn có nhiều quy ước giờ, `timeBasis` cấp trang là `PER_SOURCE`. Bộ lọc khoảng thời gian áp dụng lên đồng hồ của từng nguồn. Khi vẽ biểu đồ, dùng `sourceId` để lấy từng chuỗi và đọc `source.timeBasis` trước khi so sánh giờ.
+- `updateSourceStatus=CONFIGURED` nghĩa là trạm có liên kết tới nguồn đang hoạt động và hỗ trợ cập nhật. `NOT_CONNECTED` nghĩa là chưa có cấu hình như vậy. Trạng thái cấu hình không xác nhận đã nhận được số liệu mới.
 - Nút dự báo dùng mốc đầu giờ giữa 2021 và 2022 theo dữ liệu nguồn, định dạng chính xác `YYYY-MM-DDTHH:mm:ss` với phút và giây đều bằng 0. Gửi chuỗi như `2022-10-15T12:00:00`, không gắn `Z` hoặc offset. Backend cần 48 mốc liên tiếp cho mực nước và lưu lượng Trung Trang cùng mực nước Hòn Dấu.
 - Phản hồi dự báo gồm `runId, stationId, issueTimeLocal, timeBasis, modelVersion, modelBundleHash, inputHash, sourceName, dataQualityStatus, unitStatus, thresholdType, thresholdSource, thresholdValueRaw, predictions`. Mỗi phần tử `predictions` gồm `horizonHours, targetTimeLocal, predictedWaterLevelRaw, observedWaterLevelRaw, warningStatus`. Thực đo có thể là `null`. `warningStatus` có giá trị `NORMAL` hoặc `THRESHOLD_EXCEEDED` khi dự báo lớn hơn hoặc bằng Q95. Chú thích giao diện là **so với ngưỡng nghiên cứu**.
 - API gọi worker cho từng request hợp lệ. Nếu worker không hoạt động, yêu cầu trả `503` kể cả với thời điểm từng chạy.
@@ -230,8 +234,9 @@ Tất cả endpoint cần ADMIN. Với mỗi nhóm dưới đây, dùng `GET /ad
 | --- | --- |
 | `basins` | `code, name, description?, isActive` |
 | `areas` | `code, name, level, parentId?, isActive` |
+| `branches` | `code, name, basinId`. Mã nhánh duy nhất trong mỗi lưu vực. |
 | `stations` | `code, name, type, basinId, areaId, latitude?, longitude?` |
-| `sources` | `name, sourceType, url?, isActive`. Phản hồi trả `status` là `ACTIVE` hoặc `INACTIVE`. |
+| `sources` | `name, sourceType, url?, isActive, timeBasis?, supportsUpdates?`. Phản hồi trả `status` là `ACTIVE` hoặc `INACTIVE`. Nguồn CSV lịch sử không gắn cờ cập nhật. |
 | `metrics` | `code, name, quantityType` |
 
 Mã danh mục, lưu vực của trạm, tên và loại nguồn, loại đại lượng của metric là các khóa ổn định khi sửa. Trường có dấu `?` là tùy chọn. Trạng thái lưu vực, khu vực và nguồn có thể được cập nhật qua `isActive`.
@@ -239,6 +244,7 @@ Mã danh mục, lưu vực của trạm, tên và loại nguồn, loại đại 
 | Endpoint | Body và kết quả |
 | --- | --- |
 | `PUT /admin/catalog/areas/{id}/weather-location` | `{ latitude, longitude }` → `200` khu vực. Gửi đủ hai trường, theo phạm vi −90…90 và −180…180, hoặc đặt cả hai thành `null` để xóa tọa độ. |
+| `PUT /admin/catalog/stations/{id}/hydrology-links` | `{ riverBranchId, updateSourceId }` → `200`. Gửi cả hai trường, đặt `null` để bỏ liên kết. Nhánh phải cùng lưu vực, nguồn phải hoạt động và hỗ trợ cập nhật. |
 | `GET /admin/catalog/observations` | `200` trang quan trắc, có bộ lọc `stationId, qualityStatus, page, pageSize`. |
 | `PUT /admin/catalog/observations/{id}/metadata` | `{ qualityStatus, availableAt }` → `200`. Dùng ISO có offset hoặc `null` để xóa `availableAt`. Các trạng thái gồm `SOURCE_UNVERIFIED, VALID, SUSPECT, INVALID`. |
 | `GET /admin/catalog/actions` | `200` trang nhật ký gồm `id, adminId, action, resourceType, resourceKey, createdAt`. Lọc `resourceType, page, pageSize`. |

@@ -8,5 +8,5 @@ public static class VanUcObservationDataset
     public const string SourceType = "HISTORICAL_CSV";
     public const string WaterLevelCode = "water_level";
     public const string DischargeCode = "discharge";
-    public const string TimeBasis = "SOURCE_LOCAL_UNVERIFIED";
+    public const string TimeBasis = ObservationMetadata.SourceLocalUnverified;
 }

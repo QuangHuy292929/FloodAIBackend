@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://127.0.0.1:3085/"
+      "url": "http://127.0.0.1:12871/"
     }
   ],
   "paths": {
@@ -432,6 +432,213 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CatalogArea"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/catalog/branches": {
+      "get": {
+        "tags": [
+          "AdminCatalog"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiverBranchSummary"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiverBranchSummary"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiverBranchSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AdminCatalog"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiverBranchInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiverBranchInput"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiverBranchInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiverBranchSummary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiverBranchSummary"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiverBranchSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/catalog/branches/{id}": {
+      "put": {
+        "tags": [
+          "AdminCatalog"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiverBranchInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiverBranchInput"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiverBranchInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiverBranchSummary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiverBranchSummary"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiverBranchSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/catalog/stations/{id}/hydrology-links": {
+      "put": {
+        "tags": [
+          "AdminCatalog"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationHydrologyLinksInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationHydrologyLinksInput"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/StationHydrologyLinksInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStation"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStation"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStation"
                 }
               }
             }
@@ -2375,6 +2582,47 @@
         }
       }
     },
+    "/api/v1/basins/{id}/branches": {
+      "get": {
+        "tags": [
+          "Basins"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/basins/{id}/stations": {
       "get": {
         "tags": [
@@ -2388,6 +2636,20 @@
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
               "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int64"
             }
           }
@@ -4010,6 +4272,29 @@
             }
           },
           {
+            "name": "SourceId",
+            "in": "query",
+            "schema": {
+              "maximum": 9223372036854775807,
+              "minimum": 1,
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "DataOrigin",
+            "in": "query",
+            "schema": {
+              "maxLength": 32,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "Page",
             "in": "query",
             "schema": {
@@ -4672,7 +4957,9 @@
           "name",
           "url",
           "sourceType",
-          "status"
+          "status",
+          "timeBasis",
+          "supportsUpdates"
         ],
         "type": "object",
         "properties": {
@@ -4698,6 +4985,12 @@
           },
           "status": {
             "type": "string"
+          },
+          "timeBasis": {
+            "type": "string"
+          },
+          "supportsUpdates": {
+            "type": "boolean"
           }
         }
       },
@@ -4779,7 +5072,10 @@
           "timestampLocal",
           "valueRaw",
           "qualityStatus",
-          "availableAt"
+          "availableAt",
+          "dataOrigin",
+          "unit",
+          "ingestedAt"
         ],
         "type": "object",
         "properties": {
@@ -4831,6 +5127,22 @@
             "type": "string"
           },
           "availableAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "dataOrigin": {
+            "type": "string"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ingestedAt": {
             "type": [
               "null",
               "string"
@@ -4920,7 +5232,9 @@
           "name",
           "type",
           "latitude",
-          "longitude"
+          "longitude",
+          "riverBranchId",
+          "updateSourceId"
         ],
         "type": "object",
         "properties": {
@@ -4974,6 +5288,24 @@
               "string"
             ],
             "format": "double"
+          },
+          "riverBranchId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "updateSourceId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -5883,6 +6215,18 @@
           "isActive": {
             "type": "boolean",
             "default": true
+          },
+          "timeBasis": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "supportsUpdates": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -6680,7 +7024,9 @@
         "required": [
           "id",
           "name",
-          "url"
+          "url",
+          "sourceType",
+          "timeBasis"
         ],
         "type": "object",
         "properties": {
@@ -6700,6 +7046,12 @@
               "null",
               "string"
             ]
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "timeBasis": {
+            "type": "string"
           }
         }
       },
@@ -6709,7 +7061,11 @@
           "valueRaw",
           "qualityStatus",
           "availableAt",
-          "source"
+          "source",
+          "dataOrigin",
+          "unit",
+          "unitStatus",
+          "ingestedAt"
         ],
         "type": "object",
         "properties": {
@@ -6737,6 +7093,25 @@
           },
           "source": {
             "$ref": "#/components/schemas/ObservationSourceSummary"
+          },
+          "dataOrigin": {
+            "type": "string"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unitStatus": {
+            "type": "string"
+          },
+          "ingestedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -6869,6 +7244,94 @@
           }
         }
       },
+      "RiverBranchInput": {
+        "required": [
+          "code",
+          "name",
+          "basinId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "basinId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RiverBranchSummary": {
+        "required": [
+          "id",
+          "basinId",
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "basinId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "StationHydrologyLinksInput": {
+        "required": [
+          "riverBranchId",
+          "updateSourceId"
+        ],
+        "type": "object",
+        "properties": {
+          "riverBranchId": {
+            "maximum": 9223372036854775807,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "updateSourceId": {
+            "maximum": 9223372036854775807,
+            "minimum": 1,
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "StationInput": {
         "required": [
           "code",
@@ -6957,7 +7420,9 @@
           "name",
           "type",
           "latitude",
-          "longitude"
+          "longitude",
+          "riverBranchId",
+          "updateSourceStatus"
         ],
         "type": "object",
         "properties": {
@@ -6995,6 +7460,18 @@
               "string"
             ],
             "format": "double"
+          },
+          "riverBranchId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "updateSourceStatus": {
+            "type": "string"
           }
         }
       },

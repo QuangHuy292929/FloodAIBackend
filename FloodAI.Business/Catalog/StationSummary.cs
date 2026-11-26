@@ -6,4 +6,6 @@ public sealed record StationSummary(
     string Name,
     string Type,
     double? Latitude,
-    double? Longitude);
+    double? Longitude,
+    long? RiverBranchId,
+    string UpdateSourceStatus);

@@ -95,10 +95,43 @@ public sealed class AdminHydrologyCatalogService(FloodAiDbContext dbContext)
         new(area.Id, area.ParentId, area.Code, area.Name, area.Level, area.IsActive,
             area.WeatherLatitude, area.WeatherLongitude);
 
+    public Task<List<RiverBranchSummary>> GetBranchesAsync(CancellationToken cancellationToken) =>
+        dbContext.RiverBranches.AsNoTracking().OrderBy(branch => branch.BasinId).ThenBy(branch => branch.Name)
+            .ThenBy(branch => branch.Id)
+            .Select(branch => new RiverBranchSummary(branch.Id, branch.BasinId, branch.Code, branch.Name))
+            .ToListAsync(cancellationToken);
+
+    public async Task<RiverBranchSummary> SaveBranchAsync(long adminId, long? id, RiverBranchInput input,
+        CancellationToken cancellationToken)
+    {
+        var code = input.Code.ToLowerInvariant();
+        var branch = id is { } existingId
+            ? await dbContext.RiverBranches.FindAsync([existingId], cancellationToken) ??
+              throw new CatalogException(CatalogError.NotFound, "River branch not found.")
+            : new RiverBranch { BasinId = input.BasinId, Code = code, Name = "" };
+
+        if (!branch.Code.Equals(code, StringComparison.OrdinalIgnoreCase) || branch.BasinId != input.BasinId)
+        {
+            throw new CatalogException(CatalogError.Conflict, "The river branch cannot change its code or basin.");
+        }
+        if (id is null)
+        {
+            if (!await dbContext.Basins.AnyAsync(basin => basin.Id == input.BasinId, cancellationToken))
+            {
+                throw new CatalogException(CatalogError.Invalid, "The river branch needs an existing basin.");
+            }
+            dbContext.RiverBranches.Add(branch);
+        }
+        branch.Name = input.Name.Trim();
+        await SaveAsync(adminId, id, "RIVER_BRANCH",
+            FormattableString.Invariant($"{branch.BasinId}:{branch.Code}"), cancellationToken);
+        return new RiverBranchSummary(branch.Id, branch.BasinId, branch.Code, branch.Name);
+    }
+
     public Task<List<CatalogStation>> GetStationsAsync(CancellationToken cancellationToken) =>
         dbContext.Stations.AsNoTracking().OrderBy(station => station.Id)
             .Select(station => new CatalogStation(station.Id, station.BasinId, station.AreaId, station.Code,
-                station.Name, station.Type, station.Latitude, station.Longitude))
+                station.Name, station.Type, station.Latitude, station.Longitude, station.RiverBranchId, station.UpdateSourceId))
             .ToListAsync(cancellationToken);
 
     public async Task<CatalogStation> SaveStationAsync(long adminId, long? id, StationInput input,
@@ -130,9 +163,36 @@ public sealed class AdminHydrologyCatalogService(FloodAiDbContext dbContext)
 
         await SaveAsync(adminId, id, "STATION", FormattableString.Invariant($"{station.BasinId}:{station.Code}"),
             cancellationToken);
-        return new CatalogStation(station.Id, station.BasinId, station.AreaId, station.Code,
-            station.Name, station.Type, station.Latitude, station.Longitude);
+        return ToCatalogStation(station);
     }
+
+    public async Task<CatalogStation> SetHydrologyLinksAsync(long adminId, long id, long? branchId,
+        long? sourceId, CancellationToken cancellationToken)
+    {
+        var station = await dbContext.Stations.FindAsync([id], cancellationToken) ??
+                      throw new CatalogException(CatalogError.NotFound, "Station not found.");
+        if (branchId is { } selectedBranch && !await dbContext.RiverBranches.AnyAsync(
+            branch => branch.Id == selectedBranch && branch.BasinId == station.BasinId, cancellationToken))
+        {
+            throw new CatalogException(CatalogError.Invalid, "Select a river branch in the station's basin.");
+        }
+        if (sourceId is { } selectedSource && !await dbContext.DataSources.AnyAsync(
+            source => source.Id == selectedSource && source.SupportsUpdates && source.Status == "ACTIVE", cancellationToken))
+        {
+            throw new CatalogException(CatalogError.Invalid, "Select an active data source that supports updates.");
+        }
+
+        station.RiverBranchId = branchId;
+        station.UpdateSourceId = sourceId;
+        CatalogAudit.Record(dbContext, adminId, "UPDATE_HYDROLOGY_LINKS", "STATION",
+            FormattableString.Invariant($"{station.BasinId}:{station.Code}"));
+        await CatalogAudit.SaveAsync(dbContext, cancellationToken);
+        return ToCatalogStation(station);
+    }
+
+    private static CatalogStation ToCatalogStation(Station station) =>
+        new(station.Id, station.BasinId, station.AreaId, station.Code, station.Name, station.Type,
+            station.Latitude, station.Longitude, station.RiverBranchId, station.UpdateSourceId);
 
     private async Task EnsureValidParentAsync(long? areaId, long parentId, CancellationToken cancellationToken)
     {

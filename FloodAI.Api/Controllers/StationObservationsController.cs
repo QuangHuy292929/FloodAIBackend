@@ -1,5 +1,6 @@
 using System.Globalization;
 using FloodAI.Business.Observations;
+using FloodAI.DataAccess.Observations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FloodAI.Api.Controllers;
@@ -53,13 +54,20 @@ public sealed class StationObservationsController(ObservationService observation
             ModelState.AddModelError("page", "The requested page is out of range.");
         }
 
+        var dataOrigin = query.DataOrigin?.Trim().ToUpperInvariant();
+        if (dataOrigin is not null && !ObservationMetadata.IsKnownOrigin(dataOrigin))
+        {
+            ModelState.AddModelError("dataOrigin", "Use OBSERVED, ESTIMATED, SYNTHETIC or UNCLASSIFIED.");
+        }
+
         if (!ModelState.IsValid)
         {
             return ValidationProblem(ModelState);
         }
 
         var page = await observations.GetObservationsAsync(
-            id, query.Metric.Trim(), from, to, query.Page, query.PageSize, cancellationToken);
+            id, query.Metric.Trim(), from, to, query.Page, query.PageSize, query.SourceId, dataOrigin,
+            cancellationToken);
         if (page is null)
         {
             return NotFound();

@@ -60,8 +60,10 @@ public sealed class VanUcObservationStore(FloodAiDbContext dbContext)
         }
 
         var inserted = await dbContext.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO observations (station_id, metric_id, source_id, timestamp_local, value_raw, quality_status)
-            SELECT station_id, metric_id, {sourceId}, timestamp_local, value_raw, {ObservationQuality.SourceUnverified}
+            INSERT INTO observations (station_id, metric_id, source_id, timestamp_local, value_raw, quality_status,
+                data_origin, ingested_at)
+            SELECT station_id, metric_id, {sourceId}, timestamp_local, value_raw, {ObservationQuality.SourceUnverified},
+                {ObservationMetadata.Observed}, CURRENT_TIMESTAMP
             FROM pg_temp.van_uc_observation_import
             ON CONFLICT (station_id, metric_id, source_id, timestamp_local) DO NOTHING;
             """, cancellationToken);

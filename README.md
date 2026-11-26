@@ -82,6 +82,12 @@ Backend dùng `IMemoryCache` trong tiến trình .NET. Hai API dùng cache riên
 
 Các mốc tuổi được tính từ lúc backend tải dữ liệu thành công. Đặt giá trị theo định dạng `hh:mm:ss` trong appsettings hoặc dùng biến môi trường, ví dụ `Weather__Cache__CurrentFreshFor=00:15:00`. API đánh dấu bản dùng lại sau lỗi bằng `isStale: true` và giữ `fetchedAt` gốc. Khi hết bản phù hợp, API trả `503`.
 
+## Danh mục thủy văn và nguồn quan trắc
+
+Áp dụng migration `AddHydrologyMetadata` trước khi khởi động bản backend này. Dùng `GET /api/v1/basins/{id}/branches` để lấy nhánh sông, rồi thêm `branchId` khi gọi danh sách trạm trong lưu vực. Trạm chưa phân nhánh vẫn có trong danh sách lưu vực. Thuộc tính `updateSourceStatus` cho biết trạm đã được liên kết với nguồn có khả năng cập nhật hay chưa.
+
+API quan trắc có thể lọc theo `sourceId` và `dataOrigin`. Mỗi điểm có xuất xứ, đơn vị nếu đã xác minh, trạng thái chất lượng, quy ước giờ theo nguồn và thời điểm nhập nếu biết. Xem chi tiết trong [hợp đồng API](docs/api-reference.md).
+
 ## Quan trắc Văn Úc
 
 - `GET /api/v1/stations/{id}/metrics` liệt kê các đại lượng có dữ liệu tại trạm. Đơn vị chưa xác minh có giá trị `null`.
@@ -210,7 +216,8 @@ Các API bên dưới cần Bearer token của tài khoản `ADMIN`. Áp dụng 
 
 | Endpoint | Chức năng |
 | --- | --- |
-| `GET`, `POST /api/v1/admin/catalog/{collection}`, `PUT /api/v1/admin/catalog/{collection}/{id}` | Liệt kê, thêm và cập nhật. Các collection là `basins`, `areas`, `stations`, `sources` và `metrics`. |
+| `GET`, `POST /api/v1/admin/catalog/{collection}`, `PUT /api/v1/admin/catalog/{collection}/{id}` | Liệt kê, thêm và cập nhật. Các collection là `basins`, `areas`, `branches`, `stations`, `sources` và `metrics`. |
+| `PUT /api/v1/admin/catalog/stations/{id}/hydrology-links` | Gán hoặc xóa liên kết nhánh sông và nguồn cập nhật của trạm. |
 | `GET /api/v1/admin/catalog/observations` | Đọc giá trị và metadata, lọc theo `stationId` hoặc `qualityStatus`. |
 | `PUT /api/v1/admin/catalog/observations/{id}/metadata` | Cập nhật `qualityStatus` và `availableAt`. |
 | `GET /api/v1/admin/catalog/actions` | Xem nhật ký, có thể lọc `resourceType` như `BASIN` hoặc `FORECAST_BUNDLE`. |

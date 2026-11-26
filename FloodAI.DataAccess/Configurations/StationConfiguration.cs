@@ -13,6 +13,8 @@ internal sealed class StationConfiguration : IEntityTypeConfiguration<Station>
         builder.Property(station => station.Id).HasColumnName("id");
         builder.Property(station => station.BasinId).HasColumnName("basin_id");
         builder.Property(station => station.AreaId).HasColumnName("area_id");
+        builder.Property(station => station.RiverBranchId).HasColumnName("river_branch_id");
+        builder.Property(station => station.UpdateSourceId).HasColumnName("update_source_id");
         builder.Property(station => station.Code).HasColumnName("code");
         builder.Property(station => station.Name).HasColumnName("name");
         builder.Property(station => station.Type).HasColumnName("type");
@@ -25,6 +27,14 @@ internal sealed class StationConfiguration : IEntityTypeConfiguration<Station>
             .WithMany(basin => basin.Stations)
             .HasForeignKey(station => station.BasinId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(station => station.RiverBranch).WithMany(branch => branch.Stations)
+            .HasForeignKey(station => new { station.BasinId, station.RiverBranchId })
+            .HasPrincipalKey(branch => new { branch.BasinId, branch.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(station => station.UpdateSource).WithMany()
+            .HasForeignKey(station => station.UpdateSourceId).OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(station => station.Area)
             .WithMany(area => area.Stations)

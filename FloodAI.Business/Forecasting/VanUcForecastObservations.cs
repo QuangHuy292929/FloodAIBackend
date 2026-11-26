@@ -40,6 +40,7 @@ public sealed class VanUcForecastObservations(FloodAiDbContext dbContext)
         }
 
         var sourceData = dbContext.Observations.Where(observation => observation.SourceId == source.Id &&
+            observation.DataOrigin == ObservationMetadata.Observed &&
             observation.Station.Basin.IsActive &&
             observation.Station.Basin.Code == VanUcObservationDataset.BasinCode);
         var dischargeStations = await sourceData.Where(observation => observation.MetricId == dischargeId)
@@ -66,6 +67,7 @@ public sealed class VanUcForecastObservations(FloodAiDbContext dbContext)
         var start = issueTime.AddHours(1 - VanUcForecastDefinition.HistoryHours);
         var values = await dbContext.Observations.AsNoTracking()
             .Where(observation => observation.SourceId == series.SourceId &&
+                observation.DataOrigin == ObservationMetadata.Observed &&
                 observation.QualityStatus != ObservationQuality.Suspect &&
                 observation.QualityStatus != ObservationQuality.Invalid &&
                 observation.TimestampLocal >= start && observation.TimestampLocal <= issueTime &&
@@ -103,6 +105,7 @@ public sealed class VanUcForecastObservations(FloodAiDbContext dbContext)
         return dbContext.Observations.AsNoTracking()
             .Where(observation => observation.SourceId == series.SourceId && observation.StationId == stationId &&
                 observation.MetricId == series.WaterLevelId && targetTimes.Contains(observation.TimestampLocal) &&
+                observation.DataOrigin == ObservationMetadata.Observed &&
                 observation.QualityStatus != ObservationQuality.Suspect &&
                 observation.QualityStatus != ObservationQuality.Invalid)
             .ToDictionaryAsync(observation => observation.TimestampLocal,

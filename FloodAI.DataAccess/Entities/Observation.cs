@@ -1,3 +1,5 @@
+using FloodAI.DataAccess.Observations;
+
 namespace FloodAI.DataAccess.Entities;
 
 public sealed class Observation
@@ -10,6 +12,9 @@ public sealed class Observation
     public double ValueRaw { get; set; }
     public required string QualityStatus { get; set; }
     public DateTimeOffset? AvailableAt { get; set; }
+    public string DataOrigin { get; set; } = ObservationMetadata.Unclassified;
+    public string? Unit { get; set; }
+    public DateTimeOffset? IngestedAt { get; set; }
 
     public Station Station { get; set; } = null!;
     public Metric Metric { get; set; } = null!;

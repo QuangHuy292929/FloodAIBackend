@@ -16,11 +16,45 @@ Các đường dẫn bên dưới bắt đầu bằng `/api/v1`. Xem [hướng d
 | `403` | Tài khoản thiếu quyền, ví dụ tài khoản USER truy cập API quản trị. |
 | `404` | Tài nguyên thiếu, không công khai hoặc người dùng hiện tại không thể thấy. |
 | `409` | Xung đột như email trùng, quá số ảnh, trạng thái kiểm duyệt đã đổi hoặc khóa danh mục bị trùng. |
-| `422` | Chưa đủ điều kiện dự báo, ví dụ thiếu 48 giờ dữ liệu hợp lệ, mô hình hoạt động hoặc ngưỡng Q95. |
+| `422` | Chưa đủ điều kiện xử lý. Ví dụ khu vực chưa có tọa độ Weather, hoặc dự báo lịch sử thiếu dữ liệu, mô hình hay Q95. |
 | `429` | Quá tần suất. Chờ rồi thử lại. Các nhóm xác thực có giới hạn, ghi cộng đồng và dự báo có chính sách riêng, mỗi chính sách 30 yêu cầu/phút/IP. |
-| `503` | Dịch vụ dự báo không khả dụng hoặc email đặt lại mật khẩu chưa được cấu hình. |
+| `503` | Nguồn thời tiết, dịch vụ dự báo hoặc email đặt lại mật khẩu không khả dụng. |
 
 Lỗi thường theo `ProblemDetails` với `status`, `title`, `detail` nếu có. Lỗi xác thực đầu vào có thể thêm `errors` chứa mảng thông báo theo tên trường. Chuẩn bị thông báo mặc định nếu phản hồi lỗi có body rỗng.
+
+## Thời tiết hiện tại
+
+`GET /api/v1/weather/current?areaId=1` công khai và trả `200` cho khu vực hoạt động có tọa độ. Lấy ID từ `GET /api/v1/areas?hasWeatherLocation=true`. Thiếu hoặc sai `areaId` trả `400`. Khu vực không tồn tại hoặc bị tắt trả `404`. Khu vực chưa có tọa độ trả `422`. Khi Open-Meteo lỗi, quá thời gian chờ hoặc không trả được dữ liệu hợp lệ, API trả `503`.
+
+Ví dụ phản hồi cho Hải Phòng.
+
+```json
+{
+  "areaId": 1,
+  "areaName": "Hải Phòng",
+  "latitude": 20.86472,
+  "longitude": 106.68333,
+  "source": "Open-Meteo",
+  "sourceUrl": "https://open-meteo.com/",
+  "dataOrigin": "WEATHER_PROVIDER",
+  "timeZone": "Asia/Ho_Chi_Minh",
+  "validAt": "2026-11-26T16:15:00+00:00",
+  "fetchedAt": "2026-11-26T16:18:00+00:00",
+  "intervalSeconds": 900,
+  "temperatureC": 19.8,
+  "apparentTemperatureC": 21.7,
+  "relativeHumidityPercent": 83,
+  "precipitationMm": 0,
+  "windSpeedKmh": 3.1,
+  "windDirectionDegrees": 62,
+  "weatherCode": 2,
+  "isDay": false
+}
+```
+
+- `validAt` là mốc dữ liệu của nhà cung cấp. `fetchedAt` là thời điểm backend lấy được dữ liệu. Cả hai là thời điểm ISO 8601 có UTC offset. Dùng `timeZone` để hiển thị giờ Việt Nam.
+- `intervalSeconds` là độ dài khoảng thời gian từ nhà cung cấp. Lượng mưa là tổng trong khoảng ngay trước `validAt`. Dữ liệu thời tiết được tính từ mô hình khí tượng của Open-Meteo. Ghi nguồn trên giao diện. [Tài liệu Open-Meteo](https://open-meteo.com/en/docs#current-weather)
+- Các giá trị thời tiết từ `temperatureC` đến `isDay` có thể là `null` nếu nhà cung cấp thiếu giá trị. Giữ `0` là giá trị hợp lệ đối với lượng mưa. Dùng `weatherCode` để ánh xạ biểu tượng thời tiết theo bảng WMO của nhà cung cấp. [Bảng mã thời tiết](https://open-meteo.com/en/docs#api-documentation)
 
 ## Danh mục, quan trắc và dự báo
 

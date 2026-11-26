@@ -10,6 +10,7 @@ using FloodAI.Business.Community;
 using FloodAI.Business.Forecasting;
 using FloodAI.Business.Follows;
 using FloodAI.Business.Observations;
+using FloodAI.Business.Weather;
 using FloodAI.DataAccess;
 using FloodAI.DataAccess.Entities;
 using FloodAI.DataAccess.Observations;
@@ -27,6 +28,7 @@ builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ForecastExceptionHandler>();
 builder.Services.AddExceptionHandler<CatalogExceptionHandler>();
+builder.Services.AddExceptionHandler<WeatherExceptionHandler>();
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 var dataProtection = builder.Services.AddDataProtection().SetApplicationName("FloodAI");
@@ -62,6 +64,13 @@ builder.Services.AddHttpClient<ForecastInferenceClient>(client =>
         ?? throw new InvalidOperationException("ForecastInference:BaseUrl is required.");
     client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
     client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddScoped<WeatherService>();
+builder.Services.AddHttpClient<OpenMeteoClient>(client =>
+{
+    var baseUrl = builder.Configuration["Weather:BaseUrl"] ?? "https://api.open-meteo.com/";
+    client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    client.Timeout = TimeSpan.FromSeconds(8);
 });
 builder.Services.AddRateLimiter(options =>
 {

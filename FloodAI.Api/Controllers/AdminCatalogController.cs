@@ -45,6 +45,11 @@ public sealed class AdminCatalogController(AdminHydrologyCatalogService hydrolog
     public Task<CatalogArea> UpdateArea(long id, AreaInput input, CancellationToken cancellationToken) =>
         hydrology.SaveAreaAsync(AdminId, id, input, cancellationToken);
 
+    [HttpPut("areas/{id:long}/weather-location")]
+    public Task<CatalogArea> SetWeatherLocation(long id, AreaWeatherLocationInput input,
+        CancellationToken cancellationToken) =>
+        hydrology.SetWeatherLocationAsync(AdminId, id, input.Latitude, input.Longitude, cancellationToken);
+
     [HttpGet("stations")]
     public Task<List<CatalogStation>> GetStations(CancellationToken cancellationToken) =>
         hydrology.GetStationsAsync(cancellationToken);
@@ -113,6 +118,15 @@ public sealed class AdminCatalogController(AdminHydrologyCatalogService hydrolog
     public Task<CatalogPage<CatalogActionView>> GetActions(
         [FromQuery] CatalogPageQuery query, string? resourceType, CancellationToken cancellationToken) =>
         data.GetActionsAsync(resourceType, query.Page, query.PageSize, cancellationToken);
+}
+
+public sealed class AreaWeatherLocationInput
+{
+    [Range(-90d, 90d)]
+    public required double? Latitude { get; init; }
+
+    [Range(-180d, 180d)]
+    public required double? Longitude { get; init; }
 }
 
 public sealed class CatalogPageQuery

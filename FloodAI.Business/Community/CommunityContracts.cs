@@ -1,6 +1,8 @@
 namespace FloodAI.Business.Community;
 
-public sealed record CommunityArea(long Id, long? ParentId, string Code, string Name, string Level);
+public sealed record CommunityArea(
+    long Id, long? ParentId, string Code, string Name, string Level,
+    double? WeatherLatitude, double? WeatherLongitude);
 
 public sealed record CommunityAuthor(long Id, string DisplayName);
 

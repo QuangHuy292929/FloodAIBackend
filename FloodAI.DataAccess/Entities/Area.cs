@@ -8,6 +8,8 @@ public sealed class Area
     public required string Name { get; set; }
     public required string Level { get; set; }
     public bool IsActive { get; set; } = true;
+    public double? WeatherLatitude { get; set; }
+    public double? WeatherLongitude { get; set; }
 
     public Area? Parent { get; set; }
     public ICollection<Area> Children { get; } = new List<Area>();

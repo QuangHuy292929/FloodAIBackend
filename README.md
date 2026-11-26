@@ -8,6 +8,10 @@ Backend ASP.NET Core Web API chạy trên .NET 10. Cơ sở dữ liệu dùng Po
 | `FloodAI.Business` | Nghiệp vụ |
 | `FloodAI.DataAccess` | `FloodAiDbContext`, entity, cấu hình bảng và migrations |
 
+## Tài liệu bàn giao frontend
+
+Bắt đầu từ [hướng dẫn tích hợp](docs/frontend-handoff.md), sau đó tra [hợp đồng API](docs/api-reference.md) hoặc nhập [OpenAPI JSON](docs/openapi.v1.json) vào công cụ phát triển.
+
 ## Chạy API
 
 Chạy các lệnh sau trong thư mục `backend` với .NET 10 SDK.

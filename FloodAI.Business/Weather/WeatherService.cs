@@ -5,7 +5,31 @@ namespace FloodAI.Business.Weather;
 
 public sealed class WeatherService(FloodAiDbContext dbContext, OpenMeteoClient provider)
 {
+    private const string Source = "Open-Meteo";
+    private const string SourceUrl = "https://open-meteo.com/";
+    private const string DataOrigin = "WEATHER_PROVIDER";
+
     public async Task<CurrentWeather> GetCurrentAsync(long areaId, CancellationToken cancellationToken)
+    {
+        var (name, latitude, longitude) = await GetLocationAsync(areaId, cancellationToken);
+        var snapshot = await provider.ReadCurrentAsync(latitude, longitude, cancellationToken);
+        return new CurrentWeather(areaId, name, latitude, longitude, Source, SourceUrl,
+            DataOrigin, OpenMeteoClient.TimeZone, DateTimeOffset.FromUnixTimeSeconds(snapshot.Time),
+            DateTimeOffset.UtcNow, snapshot.Interval, snapshot.Temperature, snapshot.ApparentTemperature,
+            snapshot.RelativeHumidity, snapshot.Precipitation, snapshot.WindSpeed, snapshot.WindDirection,
+            snapshot.WeatherCode, snapshot.IsDay is int day ? day == 1 : null);
+    }
+
+    public async Task<WeatherForecast> GetForecastAsync(long areaId, CancellationToken cancellationToken)
+    {
+        var (name, latitude, longitude) = await GetLocationAsync(areaId, cancellationToken);
+        var (hourly, daily) = await provider.ReadForecastAsync(latitude, longitude, cancellationToken);
+        return new WeatherForecast(areaId, name, latitude, longitude, Source, SourceUrl, DataOrigin,
+            OpenMeteoClient.TimeZone, DateTimeOffset.UtcNow, hourly, daily);
+    }
+
+    private async Task<(string Name, double Latitude, double Longitude)> GetLocationAsync(
+        long areaId, CancellationToken cancellationToken)
     {
         var area = await dbContext.Areas.AsNoTracking()
             .Where(area => area.Id == areaId && area.IsActive)
@@ -17,12 +41,6 @@ public sealed class WeatherService(FloodAiDbContext dbContext, OpenMeteoClient p
             throw new WeatherException(WeatherError.LocationNotConfigured,
                 "The area does not have a configured weather location.");
         }
-
-        var snapshot = await provider.ReadCurrentAsync(latitude, longitude, cancellationToken);
-        return new CurrentWeather(areaId, area.Name, latitude, longitude, "Open-Meteo", "https://open-meteo.com/",
-            "WEATHER_PROVIDER", OpenMeteoClient.TimeZone, DateTimeOffset.FromUnixTimeSeconds(snapshot.Time),
-            DateTimeOffset.UtcNow, snapshot.Interval, snapshot.Temperature, snapshot.ApparentTemperature,
-            snapshot.RelativeHumidity, snapshot.Precipitation, snapshot.WindSpeed, snapshot.WindDirection,
-            snapshot.WeatherCode, snapshot.IsDay is int day ? day == 1 : null);
+        return (area.Name, latitude, longitude);
     }
 }

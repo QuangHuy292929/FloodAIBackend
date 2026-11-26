@@ -65,6 +65,8 @@ Migration `AddAreaWeatherLocation` điền tọa độ cho khu vực `hai_phong`
 
 Sau khi chọn khu vực, gọi `GET /api/v1/weather/current?areaId=1` để lấy thời tiết Hải Phòng. Dùng `validAt` làm mốc dữ liệu, `timeZone` để định dạng giờ địa phương, và hiển thị nguồn từ `source` và `sourceUrl`. Xem [hợp đồng API](api-reference.md) để biết kiểu dữ liệu và trạng thái lỗi.
 
+Gọi tiếp `GET /api/v1/weather/forecast?areaId=1` để lấy `hourly` cho biểu đồ theo giờ và `daily` cho danh sách 7 ngày. Dùng `validAt` làm mốc giờ và giữ `daily.date` theo lịch Việt Nam. Chuỗi theo giờ bắt đầu từ nửa đêm hôm nay. Nếu cần, lọc các mốc đã qua ở giao diện.
+
 ## Thử luồng dự báo Văn Úc
 
 Dữ liệu demo trên Supabase có lưu vực Văn Úc `1`, khu vực Hải Phòng `1`, trạm Trung Trang `1` và Hòn Dấu `2`. Dùng danh mục API để lấy ID trong từng môi trường.

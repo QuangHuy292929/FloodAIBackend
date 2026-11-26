@@ -86,6 +86,12 @@ Accept: application/json
 
 ###
 
+# Hourly and daily forecast for Hải Phòng.
+GET {{host}}/api/v1/weather/forecast?areaId=1
+Accept: application/json
+
+###
+
 # Replace the area ID with an active area ID.
 GET {{host}}/api/v1/areas/1/posts?type=FLOOD_REPORT&page=1&pageSize=20
 Accept: application/json

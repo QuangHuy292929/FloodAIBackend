@@ -56,6 +56,34 @@ Ví dụ phản hồi cho Hải Phòng.
 - `intervalSeconds` là độ dài khoảng thời gian từ nhà cung cấp. Lượng mưa là tổng trong khoảng ngay trước `validAt`. Dữ liệu thời tiết được tính từ mô hình khí tượng của Open-Meteo. Ghi nguồn trên giao diện. [Tài liệu Open-Meteo](https://open-meteo.com/en/docs#current-weather)
 - Các giá trị thời tiết từ `temperatureC` đến `isDay` có thể là `null` nếu nhà cung cấp thiếu giá trị. Giữ `0` là giá trị hợp lệ đối với lượng mưa. Dùng `weatherCode` để ánh xạ biểu tượng thời tiết theo bảng WMO của nhà cung cấp. [Bảng mã thời tiết](https://open-meteo.com/en/docs#api-documentation)
 
+## Dự báo theo giờ và 7 ngày
+
+`GET /api/v1/weather/forecast?areaId=1` là API công khai nhận ID khu vực hoạt động có tọa độ Weather. Mã phản hồi gồm `200`, `400`, `404`, `422` và `503`, cùng ý nghĩa với API thời tiết hiện tại. Phản hồi lỗi có dạng ProblemDetails.
+
+| Phần phản hồi | Trường |
+| --- | --- |
+| Thông tin khu vực và nguồn | `areaId, areaName, latitude, longitude, source, sourceUrl, dataOrigin, timeZone, fetchedAt` |
+| `hourly` | 168 mốc gồm `validAt, temperatureC, relativeHumidityPercent, precipitationMm, precipitationProbabilityPercent, windSpeedKmh, weatherCode` |
+| `daily` | 7 ngày gồm `date, minTemperatureC, maxTemperatureC, precipitationMm, maxPrecipitationProbabilityPercent, weatherCode` |
+
+- Chuỗi `hourly` bắt đầu từ **00:00 của hôm nay tại Việt Nam**, gồm cả các giờ đã qua trong ngày. `validAt` là ISO 8601 có offset `+07:00`. Nếu giao diện chỉ hiển thị các giờ sắp tới, lọc theo thời điểm hiện tại.
+- `daily.date` là ngày địa phương theo định dạng `YYYY-MM-DD`. Hiển thị như ngày lịch và giữ nguyên ngày khi đổi múi giờ thiết bị. `fetchedAt` là thời điểm backend lấy dữ liệu.
+- `precipitationMm` trong chuỗi giờ là lượng mưa trong giờ trước mốc `validAt`. Trong chuỗi ngày, đó là tổng lượng mưa của ngày. Các biến thời tiết có thể là `null` khi nhà cung cấp thiếu dữ liệu. Giữ `0` là giá trị riêng. [Tài liệu biến dự báo Open-Meteo](https://open-meteo.com/en/docs#api-documentation)
+
+Ví dụ một phần tử của `hourly`.
+
+```json
+{
+  "validAt": "2026-11-26T00:00:00+07:00",
+  "temperatureC": 20.1,
+  "relativeHumidityPercent": 82,
+  "precipitationMm": 0,
+  "precipitationProbabilityPercent": null,
+  "windSpeedKmh": 6.2,
+  "weatherCode": 2
+}
+```
+
 ## Danh mục, quan trắc và dự báo
 
 Tất cả endpoint trong mục này công khai.

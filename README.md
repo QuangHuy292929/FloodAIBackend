@@ -60,9 +60,11 @@ dotnet ef database update --project FloodAI.DataAccess --startup-project FloodAI
 
 Project khởi động cung cấp cấu hình kết nối. Project DataAccess giữ migration và snapshot của schema.
 
-## Thời tiết hiện tại
+## API thời tiết
 
 Gọi `GET /api/v1/weather/current?areaId=1` để thử với Hải Phòng trên dữ liệu demo. Nếu dùng database khác, lấy ID bằng `GET /api/v1/areas?hasWeatherLocation=true`. API gọi Open-Meteo từ backend và dùng tọa độ đại diện của khu vực. Cơ sở dữ liệu cần migration `AddAreaWeatherLocation` từ gói danh mục. Xem hợp đồng phản hồi trong [tài liệu API](docs/api-reference.md).
+
+Gọi `GET /api/v1/weather/forecast?areaId=1` để lấy 168 mốc theo giờ và 7 ngày địa phương, bắt đầu từ 00:00 hôm nay theo giờ Việt Nam.
 
 Máy chạy backend cần kết nối HTTPS đến `api.open-meteo.com`. Cấu hình `Weather__BaseUrl` nếu cần trỏ đến một nguồn mô phỏng hợp đồng Open-Meteo trong kiểm thử. Khi trình bày dữ liệu, ghi nguồn Open-Meteo và nêu rõ dữ liệu đã được chuẩn hóa nếu có thay đổi khi hiển thị. [Tài liệu Open-Meteo](https://open-meteo.com/en/docs) · [Điều khoản và ghi công](https://open-meteo.com/en/pricing#faq)
 
